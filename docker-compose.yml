@@ -1,10 +1,32 @@
 services:
-  discordbot:
+  discordbot-dev:
     build: .
-    container_name: discordbot
+    container_name: discordbot-dev
     working_dir: /app
     env_file:
-      - .env
+      - .env.dev                 # ← deine Dev-Env-Datei (mit Dev-Token)
+    environment:
+      - BOT_ENV=dev              # ← triggert den Dev-Block in main.py
     volumes:
       - .:/app
-    restart: unless-stopped
+      - ./logs/dev:/app/logs     # separate Logs für Dev (optional, aber nice)
+    ports:
+      - "8001:8000"              # anderer Port, damit Prod 8000 frei hat
+    restart: unless-stopped      # oder 'no' zum Testen
+    command: python main.py      # explizit, falls du mal was anderes brauchst
+
+  discordbot-prod:
+    build: .
+    container_name: discordbot-prod
+    working_dir: /app
+    env_file:
+      - .env                     # ← deine Prod-Env-Datei (mit Prod-Token)
+    environment:
+      - BOT_ENV=prod             # ← triggert den Prod-Block in main.py
+    volumes:
+      - .:/app
+      - ./logs/prod:/app/logs    # separate Logs für Prod
+    ports:
+      - "8000:8000"              # Standard-Port für Prod-API
+    restart: unless-stopped      # wichtig – Prod soll immer laufen
+    command: python main.py

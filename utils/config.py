@@ -45,5 +45,10 @@ class Config:
         tickets = self._data.get("tickets",{})
         return tickets if isinstance(tickets, dict) else {}
     
+    @property
+    def features(self) -> dict:
+        features = self._data.get("features", {})
+        return features if isinstance(features, dict) else {}
+    
 # Singleton
 config = Config()

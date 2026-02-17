@@ -5,12 +5,21 @@ from discord.ext import commands
 from utils.decorators import require_perm
 from utils.hardening import can_moderate
 from utils.logger import logger, log_to_channel
-from utils.config import config
-
+from utils.config import config   # ← NEU: Import für config.features
 
 class Roles(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+
+    # Hilfsfunktion für Feature-Check (optional, aber sauber und wiederverwendbar)
+    async def _check_roles_feature(self, interaction: discord.Interaction):
+        if not config.features.get("roles", False):
+            await interaction.response.send_message(
+                "Rollen-Management ist aktuell deaktiviert.",
+                ephemeral=True
+            )
+            return False
+        return True
 
     # -----------------------------
     # ROLE ADD
@@ -24,6 +33,9 @@ class Roles(commands.Cog):
         role: discord.Role,
     ):
         await interaction.response.defer(ephemeral=True)
+
+        if not await self._check_roles_feature(interaction):
+            return
 
         allowed, reason = can_moderate(
             interaction=interaction,
@@ -109,6 +121,9 @@ class Roles(commands.Cog):
     ):
         await interaction.response.defer(ephemeral=True)
 
+        if not await self._check_roles_feature(interaction):
+            return
+
         allowed, reason = can_moderate(
             interaction=interaction,
             target=user,
@@ -160,7 +175,6 @@ class Roles(commands.Cog):
             f"✅ {role.mention} wurde von {user.mention} entfernt.",
             ephemeral=True
         )
-
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Roles(bot))

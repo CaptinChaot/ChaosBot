@@ -77,3 +77,32 @@ moderation:
   warn_ban_threshold: 5
   warn_timeout_threshold: 2
   warn_timeout_duration: 300 # in seconds
+
+tickets:
+  enabled: true
+  #Kategorie für offene Tickets
+  category_open: 1469741779346657425
+  #Kategorie für closed Tickets
+  category_closed: 1469741852507766927
+  #Wer darf Tickets sehen
+  support_min_level: 5
+  #Channel-Nameing
+  channel_prefix: "Ticket"
+  #Archiv-Verhalten
+  archive:
+    hide_from_user: true
+    lock_user_message: true
+
+# ... deine bisherigen Sections ...
+
+features:
+  admin: true                  # admin commands (Reload, Dev-Panel, etc.)
+  dev: true                     # Dev-Panel + Debug-Features
+  fun: true                     # Fun-Commands (Meme, etc.)
+  moderation: true             # Auto-Mod (Spam/Caps/Warn-Thresholds usw.)
+  roles: true                   # Role-Management (Auto-Assign, Sync, etc.)
+  tickets: false                # Wenn Tickets schon stabil sind
+  twitch_notifications: false   # Live-Announcements
+  
+  # Füge einfach alles hinzu, was du später mal togglen willst
+  # Defaults für Prod: meist false, bis du sicher bist

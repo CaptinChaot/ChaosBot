@@ -9,6 +9,7 @@ venv/
 
 # Environment
 .env
+.env.dev
 
 # Logs
 logs/

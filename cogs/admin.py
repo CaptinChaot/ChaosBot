@@ -5,6 +5,7 @@ from discord.ext import commands
 from utils.decorators import require_perm
 from utils.hardening import can_moderate
 from utils.logger import logger
+from utils.config import config
 
 allowed_cogs = {"admin", "moderation", "fun", "utility", "music"}
 
@@ -16,13 +17,17 @@ class Admin(commands.Cog):
     @app_commands.describe(cog="Name des Cogs (z.B. moderation, admin)")
     @require_perm("reload")
     async def reload(self, interaction: discord.Interaction, cog: str):
+        if not config.features.get("admin", False):
+            await interaction.response.send_message("Admin-Commands sind aktuell deaktiviert.", ephemeral=True)
+            return
+
         await interaction.response.defer(ephemeral=True)
 
+        # Rest deines Codes bleibt 1:1 gleich
         cog = cog.lower().strip()
         if cog.startswith("cogs."):
             cog = cog.removeprefix("cogs.")
 
-        # Hardening (kein Target, aber trotzdem Kontextprüfung)
         allowed, reason = can_moderate(
             interaction=interaction,
             target=None,
@@ -32,7 +37,6 @@ class Admin(commands.Cog):
             await interaction.followup.send(f"❌ {reason}", ephemeral=True)
             return
 
-        # Allowed list of cogs
         if cog not in allowed_cogs:
             await interaction.followup.send(
                 "❌ Dieses Cog darf nicht manuell geladen werden.",
@@ -71,7 +75,3 @@ class Admin(commands.Cog):
                 ephemeral=True
             )
             logger.exception(f"RELOAD FAILED | {ext}")
-
-
-async def setup(bot: commands.Bot):
-    await bot.add_cog(Admin(bot))

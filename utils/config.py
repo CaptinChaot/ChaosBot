@@ -40,5 +40,10 @@ class Config:
         sec =self._data.get("security", {})
         return sec if isinstance(sec, dict) else {}
     
+    @property
+    def tickets(self) -> dict:
+        tickets = self._data.get("tickets",{})
+        return tickets if isinstance(tickets, dict) else {}
+    
 # Singleton
 config = Config()

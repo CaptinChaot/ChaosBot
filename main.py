@@ -39,51 +39,47 @@ os.environ["BOT_ENV"] = bot_env
 if bot_env == "dev":
     logger.info("Dev-Overrides: Test-IDs + volle Features")
 
-    # Test-Guild-ID
-    config.guild_id = 1460995865329270964
+    # Wichtig: config._data direkt überschreiben (internes Dict!)
+    config._data["guild_id"] = 1460995865329270964
 
     # Log-Channels
-    config.log_channels = config.get("log_channels", {})
-    config.log_channels["bot"] = 1460995867334017169
-    config.log_channels["moderation"] = 1461013968335409388
+    config._data.setdefault("log_channels", {})
+    config._data["log_channels"]["bot"] = 1460995867334017169
+    config._data["log_channels"]["moderation"] = 1461013968335409388
 
-    # Tickets – immer an + Test-Kategorien
-    config.tickets = config.get("tickets", {})
-    config.tickets["enabled"] = True
-    config.tickets["category_open"] = 1469741779346657425
-    config.tickets["category_closed"] = 1469741852507766927
+    # Tickets
+    config._data.setdefault("tickets", {})
+    config._data["tickets"]["enabled"] = True
+    config._data["tickets"]["category_open"] = 1469741779346657425
+    config._data["tickets"]["category_closed"] = 1469741852507766927
 
-    # Roles – Test-IDs
-    config.roles = config.get("roles", {})
-    config.roles["bot"] = 1461009559048032361
-    config.roles["owner"] = 1460995865731793089
-    config.roles["co_owner"] = 1460995865731793088
-    config.roles["admin"] = 1460995865731793086
-    config.roles["moderator"] = 1460995865731793085
-    config.roles["dev"] = 1464688329491484792
-    config.roles["supporter"] = 1460995865731793084
-    config.roles["member_1"] = 1460995865329270968
-    config.roles["member_2"] = 1460995865329270969
-    config.roles["member_3"] = 1460995865329270970
-    config.roles["member_4"] = 1460995865329270971
+    # Roles
+    config._data.setdefault("roles", {})
+    config._data["roles"]["bot"] = 1461009559048032361
+    config._data["roles"]["owner"] = 1460995865731793089
+    config._data["roles"]["co_owner"] = 1460995865731793088
+    config._data["roles"]["admin"] = 1460995865731793086
+    config._data["roles"]["moderator"] = 1460995865731793085
+    config._data["roles"]["dev"] = 1464688329491484792
+    config._data["roles"]["supporter"] = 1460995865731793084
+    config._data["roles"]["member_1"] = 1460995865329270968
+    config._data["roles"]["member_2"] = 1460995865329270969
+    config._data["roles"]["member_3"] = 1460995865329270970
+    config._data["roles"]["member_4"] = 1460995865329270971
 
-    # Features: In Dev ALLES aktivieren
-    config.features = config.get("features", {})
-    config.features["admin"]                 = True
-    config.features["dev"]                   = True
-    config.features["fun"]                   = True
-    config.features["moderation"]            = True
-    config.features["roles"]                 = True
-    config.features["tickets"]               = True   # ← zum Debuggen True
-    config.features["twitch_notifications"]  = False
+    # Features
+    config._data.setdefault("features", {})
+    config._data["features"]["admin"]                 = True
+    config._data["features"]["dev"]                   = True
+    config._data["features"]["fun"]                   = True
+    config._data["features"]["moderation"]            = True
+    config._data["features"]["roles"]                 = True
+    config._data["features"]["tickets"]               = True   # ← zum Debuggen True
+    config._data["features"]["twitch_notifications"]  = False
 
     logger.info("Dev-Modus: Alle Features & Test-IDs aktiviert – Chaos erlaubt! 🚧")
 
 else:
-    # Prod: KEINE weiteren Überschreibungen!
-    # Der Bot nimmt 1:1 die Werte aus config.yaml
-    # Wenn du in YAML moderation: false setzt → lädt nicht
-    # Wenn true → lädt
     logger.info("Prod-Modus: 100% config.yaml-Werte – keine erzwungenen Änderungen")
 
 # STAFF_ROLE_IDS neu bauen (nach Overrides!)
@@ -117,7 +113,7 @@ class ChaosBot(commands.Bot):
             "roles":       config.features.get("roles", False),
             "moderation":  config.features.get("moderation", False),
             "tickets":     config.tickets.get("enabled", False),
-            "dev":         True,
+            "dev":         True,  # ← immer laden für Sync in Prod
         }
 
         for cog_name, enabled in cogs.items():

@@ -75,3 +75,6 @@ class Admin(commands.Cog):
                 ephemeral=True
             )
             logger.exception(f"RELOAD FAILED | {ext}")
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(Admin(bot))   

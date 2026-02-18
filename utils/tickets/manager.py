@@ -12,7 +12,8 @@ from utils.tickets.constants import TICKET_TYPES
 # ==================================================
 
 def _ticket_cfg() -> dict:
-    tickets_cfg = config.get("tickets")
+    # Fix: config.tickets statt config.get("tickets")
+    tickets_cfg = config.tickets
     if not tickets_cfg:
         raise RuntimeError("tickets-Block fehlt in config.yaml")
     return tickets_cfg

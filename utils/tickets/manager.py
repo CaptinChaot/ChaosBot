@@ -3,7 +3,7 @@
 import discord
 from utils.config import config
 from utils.permissions import get_user_perm_level, PermLevel
-from utils.logger import log_to_channel
+from utils.logger import log_to_channel, logger
 from utils.tickets.constants import TICKET_TYPES
 
 
@@ -14,13 +14,15 @@ from utils.tickets.constants import TICKET_TYPES
 def _ticket_cfg() -> dict:
     # Fix: config.tickets statt config.get("tickets")
     tickets_cfg = config.tickets
-    if not tickets_cfg:
-        raise RuntimeError("tickets-Block fehlt in config.yaml")
+    if not tickets_cfg or not isinstance(tickets_cfg, dict):
+        raise RuntimeError("tickets-Block fehlt oder ist ungültig in config.yaml")
     return tickets_cfg
 
 
 def _is_support_plus(member: discord.Member) -> bool:
-    return get_user_perm_level(member) >= PermLevel.SUPPORT
+    level = get_user_perm_level(member)
+    logger.debug(f"PermLevel von {member} ({member.id}): {level}")
+    return level >= PermLevel.SUPPORT
 
 
 def _get_ticket_owner(channel: discord.TextChannel) -> discord.Member | None:
@@ -29,16 +31,27 @@ def _get_ticket_owner(channel: discord.TextChannel) -> discord.Member | None:
     OPEN | User:123456789 | Type:support
     """
     if not channel.topic:
+        logger.warning(f"Channel {channel.id} ({channel.name}) hat kein Topic!")
         return None
 
-    for part in channel.topic.split("|"):
+    topic = channel.topic.strip()
+    logger.debug(f"Ticket-Topic: '{topic}'")
+
+    for part in topic.split("|"):
         part = part.strip()
-        if part.startswith("User:"):
+        if part.lower().startswith("user:"):
             try:
-                user_id = int(part.split(":")[1])
-                return channel.guild.get_member(user_id)
-            except Exception:
-                return None
+                user_id_str = part[5:].strip()  # nach "User:" alles danach
+                user_id = int(user_id_str.split()[0])  # erste Zahl nehmen
+                member = channel.guild.get_member(user_id)
+                if member:
+                    logger.debug(f"Ticket-Owner gefunden: {member} ({user_id})")
+                    return member
+                else:
+                    logger.warning(f"User-ID {user_id} nicht auf Server gefunden")
+            except (ValueError, IndexError) as e:
+                logger.error(f"Fehler beim Parsen von User-ID in Topic '{topic}': {e}")
+    logger.warning(f"Kein gültiger User in Topic gefunden: '{topic}'")
     return None
 
 
@@ -56,9 +69,13 @@ async def create_ticket_channel(
 ):
     cfg = _ticket_cfg()
 
-    category = guild.get_channel(int(cfg["category_open"]))
-    if not category:
-        raise RuntimeError("Ticket-OPEN-Kategorie nicht gefunden")
+    category_id = cfg.get("category_open")
+    if not category_id:
+        raise RuntimeError("category_open fehlt in config.yaml → tickets")
+
+    category = guild.get_channel(int(category_id))
+    if not category or not isinstance(category, discord.CategoryChannel):
+        raise RuntimeError(f"Ticket-OPEN-Kategorie nicht gefunden oder ungültig: ID {category_id}")
 
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(view_channel=False),
@@ -69,7 +86,7 @@ async def create_ticket_channel(
         ),
     }
 
-    # Support-Rollen
+    # Support-Rollen hinzufügen
     for role_name in ["supporter", "moderator", "admin", "dev", "co_owner", "owner"]:
         role_id = config.roles.get(role_name)
         if role_id:
@@ -81,13 +98,17 @@ async def create_ticket_channel(
                     read_message_history=True,
                 )
 
-    # Bot selbst
+    # Bot selbst braucht volle Rechte
     bot_member = guild.me or guild.get_member(bot.user.id)
-    overwrites[bot_member] = discord.PermissionOverwrite(
-        view_channel=True,
-        manage_channels=True,
-        manage_messages=True,
-    )
+    if bot_member:
+        overwrites[bot_member] = discord.PermissionOverwrite(
+            view_channel=True,
+            manage_channels=True,
+            manage_messages=True,
+            manage_permissions=True,
+        )
+    else:
+        logger.warning("Bot-Member nicht gefunden – Manage-Rechte könnten fehlen")
 
     prefix = (
         cfg.get("channel_prefix")
@@ -98,13 +119,27 @@ async def create_ticket_channel(
     channel_name = f"{prefix}-{ticket_type}-{user.name}".lower()[:90]
     topic = f"OPEN | User:{user.id} | Type:{ticket_type}"
 
-    channel = await guild.create_text_channel(
-        name=channel_name,
-        category=category,
-        overwrites=overwrites,
-        topic=topic,
-        reason="Ticket erstellt",
-    )
+    try:
+        channel = await guild.create_text_channel(
+            name=channel_name,
+            category=category,
+            overwrites=overwrites,
+            topic=topic,
+            reason=f"Ticket erstellt von {user}",
+        )
+
+        # Sicherstellen, dass Topic wirklich gesetzt ist
+        if channel.topic != topic:
+            logger.warning(f"Topic nicht korrekt gesetzt! Setze erneut: {topic}")
+            await channel.edit(topic=topic)
+
+    except discord.Forbidden as e:
+        logger.error(f"Bot fehlen Rechte zum Erstellen des Channels: {e}")
+        raise
+
+    except discord.HTTPException as e:
+        logger.error(f"HTTP-Fehler beim Channel-Erstellen: {e}")
+        raise
 
     label = TICKET_TYPES.get(ticket_type, {}).get("label", ticket_type)
 
@@ -116,15 +151,16 @@ async def create_ticket_channel(
             f"**Beschreibung:**\n{description}"
         ),
         color=discord.Color.blurple(),
+        timestamp=discord.utils.utcnow()
     )
 
     await channel.send(content=user.mention, embed=embed)
 
     await log_to_channel(
         bot,
-        config.log_channels["moderation"],
+        config.log_channels.get("moderation", 0),
         "🎫 Ticket erstellt",
-        f"**User:** {user}\n**Channel:** {channel.mention}\n**Typ:** {ticket_type}",
+        f"**User:** {user} ({user.id})\n**Channel:** {channel.mention} ({channel.id})\n**Typ:** {ticket_type}",
     )
 
     return channel
@@ -145,23 +181,31 @@ async def claim_ticket(
 
     owner = _get_ticket_owner(channel)
     if not owner:
+        logger.error(f"Ticket-User nicht ermittelbar – Topic: '{channel.topic}'")
         raise RuntimeError("Ticket-User nicht ermittelbar")
 
-    await channel.edit(
-        topic=f"CLAIMED | User:{owner.id} | ClaimedBy:{claimer.id}",
-        reason="Ticket geclaimed",
-    )
+    try:
+        await channel.edit(
+            topic=f"CLAIMED | User:{owner.id} | ClaimedBy:{claimer.id}",
+            reason=f"Ticket geclaimed von {claimer}",
+        )
 
-    await channel.send(
-        f"🖐 **Ticket geclaimed von {claimer.mention}**"
-    )
+        await channel.send(f"🖐 **Ticket geclaimed von {claimer.mention}**")
 
-    await log_to_channel(
-        bot,
-        config.log_channels["moderation"],
-        "🖐 Ticket geclaimed",
-        f"**Channel:** {channel.mention}\n**Claimer:** {claimer}",
-    )
+        await log_to_channel(
+            bot,
+            config.log_channels.get("moderation", 0),
+            "🖐 Ticket geclaimed",
+            f"**Channel:** {channel.mention} ({channel.id})\n**Claimer:** {claimer} ({claimer.id})\n**Owner:** {owner}",
+        )
+
+    except discord.Forbidden as e:
+        logger.error(f"Fehlen Rechte zum Editieren des Channels: {e}")
+        raise
+
+    except discord.HTTPException as e:
+        logger.error(f"HTTP-Fehler beim Claim: {e}")
+        raise
 
 
 # ==================================================
@@ -178,29 +222,42 @@ async def archive_ticket(
         raise PermissionError("SUPPORT+ erforderlich")
 
     cfg = _ticket_cfg()
-    archive_category = channel.guild.get_channel(int(cfg["category_closed"]))
-    if not archive_category:
-        raise RuntimeError("Ticket-ARCHIV-Kategorie nicht gefunden")
+    archive_id = cfg.get("category_closed")
+    if not archive_id:
+        raise RuntimeError("category_closed fehlt in config.yaml → tickets")
 
-    overwrites = channel.overwrites
+    archive_category = channel.guild.get_channel(int(archive_id))
+    if not archive_category or not isinstance(archive_category, discord.CategoryChannel):
+        raise RuntimeError(f"Ticket-ARCHIV-Kategorie nicht gefunden oder ungültig: ID {archive_id}")
+
+    overwrites = channel.overwrites.copy()  # Kopie, damit wir nicht Original ändern
 
     if cfg.get("archive", {}).get("hide_from_user", True):
         owner = _get_ticket_owner(channel)
         if owner:
             overwrites[owner] = discord.PermissionOverwrite(view_channel=False)
 
-    await channel.edit(
-        category=archive_category,
-        overwrites=overwrites,
-        topic=f"ARCHIVED | ClosedBy:{closed_by.id}",
-        reason="Ticket archiviert",
-    )
+    try:
+        await channel.edit(
+            category=archive_category,
+            overwrites=overwrites,
+            topic=f"ARCHIVED | ClosedBy:{closed_by.id}",
+            reason=f"Ticket archiviert von {closed_by}",
+        )
 
-    await channel.send("🗂 **Ticket wurde archiviert.**")
+        await channel.send("🗂 **Ticket wurde archiviert.**")
 
-    await log_to_channel(
-        bot,
-        config.log_channels["moderation"],
-        "🗂 Ticket archiviert",
-        f"**Channel:** {channel.mention}\n**Closed by:** {closed_by}",
-    )
+        await log_to_channel(
+            bot,
+            config.log_channels.get("moderation", 0),
+            "🗂 Ticket archiviert",
+            f"**Channel:** {channel.mention} ({channel.id})\n**Closed by:** {closed_by} ({closed_by.id})",
+        )
+
+    except discord.Forbidden as e:
+        logger.error(f"Fehlen Rechte zum Archivieren: {e}")
+        raise
+
+    except discord.HTTPException as e:
+        logger.error(f"HTTP-Fehler beim Archivieren: {e}")
+        raise

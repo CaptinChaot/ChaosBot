@@ -138,7 +138,14 @@ class Tickets(commands.Cog):
         if not config.features.get("tickets", False):
             await interaction.response.send_message("Ticket-System deaktiviert.", ephemeral=True)
             return
+        interaction_key = f"{interaction.id}_{custom_id}"
+        if hasattr(self.bot, "_processed_interactions") and interaction_key in self.bot._recent_ticket_interactions:
+            logger.debug(f"Doppelter Interaction ignoriert: {interaction_key}")
+            return
+        if not hasattr(self.bot, "_processed_interactions"):
+            self.bot._recent_ticket_interactions = set()
 
+        self.bot._recent_ticket_interactions.add(interaction_key)
         try:
             # defer nur, wenn noch nicht geschehen (sicherer)
             if not interaction.response.is_done():

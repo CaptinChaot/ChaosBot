@@ -28,6 +28,9 @@ roles:
   member_3: 1460995865329270970 # Legendary-Gamer
   member_4: 1460995865329270971 #Godly-Gamer
 
+channels:
+ welcome_channel: 1460995866381779043
+ 
 log_channels:
   bot: 1460995867334017169
   moderation: 1461013968335409388

@@ -107,25 +107,36 @@ class ChaosBot(commands.Bot):
         )
 
     async def setup_hook(self):
+        # Alle Cogs mit ihrer Ladebedingung
         cogs = {
             "admin":       config.features.get("admin", False),
             "fun":         config.features.get("fun", False),
             "roles":       config.features.get("roles", False),
             "moderation":  config.features.get("moderation", False),
             "tickets":     config.tickets.get("enabled", False),
-            "dev":         True,  # ← immer laden für Sync in Prod
+            "dev":         True,  # ← immer laden für Sync & Debugging
+            "welcome":     True,  # ← immer laden
         }
 
-        for cog_name, enabled in cogs.items():
-            if enabled:
+        loaded_cogs = []
+        failed_cogs = []
+
+        for cog_name, should_load in cogs.items():
+            if should_load:
                 try:
                     await self.load_extension(f"cogs.{cog_name}")
+                    loaded_cogs.append(cog_name)
                     logger.info(f"Cog '{cog_name}' geladen")
                 except Exception as e:
                     logger.error(f"Fehler beim Laden von '{cog_name}': {e}")
+                    failed_cogs.append(cog_name)
             else:
                 logger.info(f"Cog '{cog_name}' übersprungen – Feature deaktiviert")
-
+        #Zusammenfassung in Log
+        logger.info(f"✅ Cogs geladen: {', '.join(loaded_cogs) if loaded_cogs else 'Keine'}")
+        if failed_cogs:
+            logger.warning(f"⚠️ Cogs mit Fehlern: {', '.join(failed_cogs)}")
+            
         guild = discord.Object(id=config.guild_id)
         self.tree.copy_global_to(guild=guild)
         await self.tree.sync(guild=guild)

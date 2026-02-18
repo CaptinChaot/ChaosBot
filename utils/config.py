@@ -50,5 +50,12 @@ class Config:
         features = self._data.get("features", {})
         return features if isinstance(features, dict) else {}
     
+    @property
+    def channels(self) -> dict:
+        channels = self._data.get("channels", {})
+        return channels if isinstance(channels, dict) else {}
+    @property
+    def welcome_channel(self) -> int | None:
+        return int(self.channels.get("welcome_channel", 0))
 # Singleton
 config = Config()

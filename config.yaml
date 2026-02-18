@@ -95,6 +95,8 @@ tickets:
   archive:
     hide_from_user: true
     lock_user_message: true
+    #Maximale Anzahl offener Tickets pro User 
+    max_open_per_user: 6
 
 # ... deine bisherigen Sections ...
 

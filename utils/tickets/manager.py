@@ -115,10 +115,7 @@ async def create_ticket_channel(
     if existing >= max_open:
         logger.info(f"Ticket-Limit erreicht für {user} ({existing}/{max_open})")
         return None
-
-    if await _has_ticket_of_type(guild, user.id, ticket_type):
-        logger.info(f"{user} hat bereits ein Ticket vom Typ {ticket_type}")
-        return None
+    
 
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(view_channel=False),

@@ -144,9 +144,11 @@ async def claim_ticket(
     channel: discord.TextChannel,
     claimer: discord.Member,
 ):
-    if not _is_support_plus(claimer):
-        perm_level = get_user_perm_level(claimer)
-        logger.info(f"Claim-Versuch ohne Berechtigung: {claimer} (Level {perm_level})")
+    
+    level = get_user_perm_level(claimer)
+    logger.debug(f"Claim-Versuch von {claimer} in ({claimer.id}) – Level: {level}")
+    if level < PermLevel.SUPPORT:
+        logger.info(f"Claim abgelehnt – unzureichende Berechtigung (Level {level})")
         await channel.send("❌ Du hast keine Berechtigung zum Claimen.", delete_after=15)
         return
     
@@ -187,12 +189,13 @@ async def archive_ticket(
     channel: discord.TextChannel,
     closed_by: discord.Member,
 ):
-    if not _is_support_plus(closed_by):
-        perm_level = get_user_perm_level(closed_by)
-        logger.info(f"Archive-Versuch ohne Berechtigung: {closed_by} (Level {perm_level})")
+    level = get_user_perm_level(closed_by)
+    logger.debug(f"Archive-Versuch von {closed_by} in ({closed_by.id}) – Level: {level}")
+    if level < PermLevel.SUPPORT:
+        logger.info(f"Archivieren abgelehnt – unzureichende Berechtigung (Level {level})")
         await channel.send("❌ Du hast keine Berechtigung zum Archivieren.", delete_after=15)
         return
-
+    
     cfg = _ticket_cfg()
     archive_category = channel.guild.get_channel(int(cfg["category_closed"]))
     if not archive_category:
@@ -204,19 +207,23 @@ async def archive_ticket(
         owner = await _get_ticket_owner(channel)
         if owner:
             overwrites[owner] = discord.PermissionOverwrite(view_channel=False)
+    try:
 
-    await channel.edit(
-        category=archive_category,
-        overwrites=overwrites,
-        topic=f"ARCHIVED | ClosedBy:{closed_by.id}",
-        reason=f"Ticket archiviert von {closed_by}",
-    )
+        await channel.edit(
+            category=archive_category,
+            overwrites=overwrites,
+            topic=f"ARCHIVED | ClosedBy:{closed_by.id}",
+         reason=f"Ticket archiviert von {closed_by}",
+        )
 
-    await channel.send("🗂 **Ticket wurde archiviert.**")
+        await channel.send("🗂 **Ticket wurde archiviert.**")
 
-    await log_to_channel(
-        bot,
-        config.log_channels.get("moderation", 0),
-        "🗂 Ticket archiviert",
-        f"**Channel:** {channel.mention}\n**Closed by:** {closed_by}",
-    )
+        await log_to_channel(
+            bot,
+            config.log_channels.get("moderation", 0),
+            "🗂 Ticket archiviert",
+            f"**Channel:** {channel.mention}\n**Closed by:** {closed_by}",
+        )
+    except Exception as e:
+        logger.exception(f"Fehler beim Archivieren: {e}")
+        await channel.send(f"❌ Fehler beim Archivieren: {str(e)[:100]}", delete_after=30)

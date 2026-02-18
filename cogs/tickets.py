@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from utils import logger
+from utils.logger import logger
 from utils.config import config
 from utils.tickets.views import TicketPanelView, TicketChannelView
 from utils.tickets.manager import create_ticket_channel, claim_ticket, archive_ticket

@@ -145,8 +145,11 @@ async def claim_ticket(
     claimer: discord.Member,
 ):
     if not _is_support_plus(claimer):
-        raise PermissionError("SUPPORT+ erforderlich")
-
+        perm_level = get_user_perm_level(claimer)
+        logger.info(f"Claim-Versuch ohne Berechtigung: {claimer} (Level {perm_level})")
+        await channel.send("❌ Du hast keine Berechtigung zum Claimen.", delete_after=15)
+        return
+    
     owner = await _get_ticket_owner(channel)   # ← jetzt async!
     owner_id = owner.id if owner else "unbekannt"
 
@@ -185,7 +188,10 @@ async def archive_ticket(
     closed_by: discord.Member,
 ):
     if not _is_support_plus(closed_by):
-        raise PermissionError("SUPPORT+ erforderlich")
+        perm_level = get_user_perm_level(closed_by)
+        logger.info(f"Archive-Versuch ohne Berechtigung: {closed_by} (Level {perm_level})")
+        await channel.send("❌ Du hast keine Berechtigung zum Archivieren.", delete_after=15)
+        return
 
     cfg = _ticket_cfg()
     archive_category = channel.guild.get_channel(int(cfg["category_closed"]))

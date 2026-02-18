@@ -18,7 +18,7 @@ class Tickets(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-        # Persistent Views nur EINMAL registrieren (verhindert Duplikat-Fehler)
+        # Persistent Views nur EINMAL registrieren
         if not hasattr(bot, "_tickets_views_added"):
             if config.features.get("tickets", False):
                 bot.add_view(TicketPanelView())
@@ -97,10 +97,6 @@ class Tickets(commands.Cog):
             return
 
         # KEIN zweites defer – Modal hat schon defer gemacht!
-        # Falls du sicher gehen willst:
-        # if not interaction.response.is_done():
-        #     await interaction.response.defer(ephemeral=True)
-
         try:
             channel = await create_ticket_channel(
                 bot=self.bot,
@@ -137,7 +133,7 @@ class Tickets(commands.Cog):
 
         custom_id = interaction.data.get("custom_id")
         if custom_id not in ("ticket_claim", "ticket_close"):
-            return  # Andere Buttons komplett ignorieren
+            return
 
         if not config.features.get("tickets", False):
             await interaction.response.send_message("Ticket-System deaktiviert.", ephemeral=True)
@@ -163,11 +159,14 @@ class Tickets(commands.Cog):
                     closed_by=interaction.user
                 )
                 await interaction.followup.send("🗂 Ticket archiviert.", ephemeral=True)
+        except PermissionError as perm_err:
+            logger.info(f"Kein Claim/Close möglich – fehlende Berechtigung: {perm_err}")
+            await interaction.followup.send(f"❌ {perm_err} - Du bracuhst Supportrechte oder höher.", ephemeral=True)
 
         except Exception as e:
             logger.exception(f"Ticket-Button Fehler ({custom_id}): {e}")
             if not interaction.response.is_done():
-                await interaction.response.send_message(f"❌ Fehler: {str(e)[:100]}", ephemeral=True)
+                await interaction.response.send_message(f"❌ UnerwarteterFehler: {str(e)[:100]}", ephemeral=True)
 
 
 async def setup(bot: commands.Bot):

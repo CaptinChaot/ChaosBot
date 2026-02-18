@@ -101,7 +101,8 @@ features:
   fun: true                     # Fun-Commands (Meme, etc.)
   moderation: true             # Auto-Mod (Spam/Caps/Warn-Thresholds usw.)
   roles: true                   # Role-Management (Auto-Assign, Sync, etc.)
-  tickets: false                # Wenn Tickets schon stabil sind
+  tickets: true                # Ticketsystem
+  logging: true                # Log-Channel-Features (Moderation, Bot-Logs, etc.)
   twitch_notifications: false   # Live-Announcements
   
   # Füge einfach alles hinzu, was du später mal togglen willst

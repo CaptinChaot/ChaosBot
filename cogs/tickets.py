@@ -96,7 +96,6 @@ class Tickets(commands.Cog):
             await interaction.followup.send("Ticket-System deaktiviert.", ephemeral=True)
             return
 
-        # KEIN zweites defer – Modal hat schon defer gemacht!
         try:
             channel = await create_ticket_channel(
                 bot=self.bot,
@@ -138,42 +137,42 @@ class Tickets(commands.Cog):
         if not config.features.get("tickets", False):
             await interaction.response.send_message("Ticket-System deaktiviert.", ephemeral=True)
             return
-        interaction_key = f"{interaction.id}_{custom_id}"
-        if hasattr(self.bot, "_processed_interactions") and interaction_key in self.bot._recent_ticket_interactions:
-            logger.debug(f"Doppelter Interaction ignoriert: {interaction_key}")
-            return
-        if not hasattr(self.bot, "_processed_interactions"):
-            self.bot._recent_ticket_interactions = set()
 
-        self.bot._recent_ticket_interactions.add(interaction_key)
         try:
-            # defer nur, wenn noch nicht geschehen (sicherer)
             if not interaction.response.is_done():
                 await interaction.response.defer(ephemeral=True)
 
+            success = False  # Flag: Wurde Claim/Close wirklich durchgeführt?
+
             if custom_id == "ticket_claim":
-                await claim_ticket(
+                success = await claim_ticket(
                     bot=self.bot,
                     channel=interaction.channel,
                     claimer=interaction.user
                 )
-                await interaction.followup.send("✅ Ticket geclaimed.", ephemeral=True)
+                if success:
+                    await interaction.followup.send("✅ Ticket geclaimed.", ephemeral=True)
 
             elif custom_id == "ticket_close":
-                await archive_ticket(
+                success = await archive_ticket(
                     bot=self.bot,
                     channel=interaction.channel,
                     closed_by=interaction.user
                 )
-                await interaction.followup.send("🗂 Ticket archiviert.", ephemeral=True)
+                if success:
+                    await interaction.followup.send("🗂 Ticket archiviert.", ephemeral=True)
+
         except PermissionError as perm_err:
             logger.info(f"Kein Claim/Close möglich – fehlende Berechtigung: {perm_err}")
-            await interaction.followup.send(f"❌ {perm_err} - Du bracuhst Supportrechte oder höher.", ephemeral=True)
+            await interaction.followup.send(
+                f"❌ {str(perm_err)} – Du brauchst Support+ Rechte.",
+                ephemeral=True
+            )
 
         except Exception as e:
             logger.exception(f"Ticket-Button Fehler ({custom_id}): {e}")
             if not interaction.response.is_done():
-                await interaction.response.send_message(f"❌ UnerwarteterFehler: {str(e)[:100]}", ephemeral=True)
+                await interaction.response.send_message(f"❌ Unerwarteter Fehler: {str(e)[:100]}", ephemeral=True)
 
 
 async def setup(bot: commands.Bot):

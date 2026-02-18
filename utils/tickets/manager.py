@@ -150,10 +150,10 @@ async def claim_ticket(
     if level < PermLevel.SUPPORT:
         logger.info(f"Claim abgelehnt – unzureichende Berechtigung (Level {level})")
         await channel.send("❌ Du hast keine Berechtigung zum Claimen.", delete_after=15)
-        return
-    else:
-        owner = await _get_ticket_owner(channel)   # ← jetzt async!
-        owner_id = owner.id if owner else "unbekannt"
+        return False
+    
+    owner = await _get_ticket_owner(channel)   # ← jetzt async!
+    owner_id = owner.id if owner else "unbekannt"
 
     if not owner:
         logger.warning(f"Ticket-Owner nicht gefunden – Claim trotzdem durchgeführt")
@@ -173,10 +173,12 @@ async def claim_ticket(
             "🖐 Ticket geclaimed",
             f"**Channel:** {channel.mention}\n**Claimer:** {claimer}\n**Owner:** {owner or 'unbekannt'}",
         )
-
+        return True
     except Exception as e:
         logger.exception(f"Fehler beim Claimen: {e}")
-        raise
+        await channel.send(f"❌ Fehler beim Claimen: {str(e)[:100]}", delete_after=30)
+        return False
+        
 
 
 # ==================================================
@@ -194,10 +196,10 @@ async def archive_ticket(
     if level < PermLevel.SUPPORT:
         logger.info(f"Archivieren abgelehnt – unzureichende Berechtigung (Level {level})")
         await channel.send("❌ Du hast keine Berechtigung zum Archivieren.", delete_after=15)
-        return
-    else:
-        cfg = _ticket_cfg()
-        archive_category = channel.guild.get_channel(int(cfg["category_closed"]))
+        return False
+    
+    cfg = _ticket_cfg()
+    archive_category = channel.guild.get_channel(int(cfg["category_closed"]))
     if not archive_category:
         raise RuntimeError("Ticket-ARCHIV-Kategorie nicht gefunden")
 
@@ -224,6 +226,8 @@ async def archive_ticket(
             "🗂 Ticket archiviert",
             f"**Channel:** {channel.mention}\n**Closed by:** {closed_by}",
         )
+        return True
     except Exception as e:
         logger.exception(f"Fehler beim Archivieren: {e}")
         await channel.send(f"❌ Fehler beim Archivieren: {str(e)[:100]}", delete_after=30)
+        return False

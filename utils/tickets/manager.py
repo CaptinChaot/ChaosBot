@@ -43,9 +43,10 @@ def _get_ticket_owner(channel: discord.TextChannel) -> discord.Member | None:
             try:
                 user_id_str = part[5:].strip()  # nach "User:" alles danach
                 user_id = int(user_id_str.split()[0])  # erste Zahl nehmen
+                logger.debug(f"Versuche Member zu finden: {user_id}")
                 member = channel.guild.get_member(user_id)
                 if member:
-                    logger.debug(f"Ticket-Owner gefunden: {member} ({user_id})")
+                    logger.debug(f"Member gefunden: {member.name} ({member.id})")
                     return member
                 else:
                     logger.warning(f"User-ID {user_id} nicht auf Server gefunden")
@@ -132,6 +133,7 @@ async def create_ticket_channel(
         if channel.topic != topic:
             logger.warning(f"Topic nicht korrekt gesetzt! Setze erneut: {topic}")
             await channel.edit(topic=topic)
+            logger.info(f"Topic nach Korrektur: '{channel.topic}'")
 
     except discord.Forbidden as e:
         logger.error(f"Bot fehlen Rechte zum Erstellen des Channels: {e}")
@@ -182,11 +184,16 @@ async def claim_ticket(
     owner = _get_ticket_owner(channel)
     if not owner:
         logger.error(f"Ticket-User nicht ermittelbar – Topic: '{channel.topic}'")
-        raise RuntimeError("Ticket-User nicht ermittelbar")
+        # Temporärer Fallback: Claim trotzdem durchführen, aber warnen
+        await channel.send("⚠️ Ticket-Owner nicht gefunden – Claim trotzdem durchgeführt.")
+        owner_id = "unbekannt"
+    else:
+        owner_id = owner.id
 
     try:
+        new_topic = f"CLAIMED | User:{owner_id} | ClaimedBy:{claimer.id}"
         await channel.edit(
-            topic=f"CLAIMED | User:{owner.id} | ClaimedBy:{claimer.id}",
+            topic=new_topic,
             reason=f"Ticket geclaimed von {claimer}",
         )
 
@@ -196,7 +203,7 @@ async def claim_ticket(
             bot,
             config.log_channels.get("moderation", 0),
             "🖐 Ticket geclaimed",
-            f"**Channel:** {channel.mention} ({channel.id})\n**Claimer:** {claimer} ({claimer.id})\n**Owner:** {owner}",
+            f"**Channel:** {channel.mention} ({channel.id})\n**Claimer:** {claimer} ({claimer.id})\n**Owner:** {owner or 'unbekannt'}",
         )
 
     except discord.Forbidden as e:
@@ -230,7 +237,7 @@ async def archive_ticket(
     if not archive_category or not isinstance(archive_category, discord.CategoryChannel):
         raise RuntimeError(f"Ticket-ARCHIV-Kategorie nicht gefunden oder ungültig: ID {archive_id}")
 
-    overwrites = channel.overwrites.copy()  # Kopie, damit wir nicht Original ändern
+    overwrites = channel.overwrites.copy()
 
     if cfg.get("archive", {}).get("hide_from_user", True):
         owner = _get_ticket_owner(channel)

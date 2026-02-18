@@ -1,5 +1,3 @@
-# cogs/tickets.py
-
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -104,7 +102,14 @@ class Tickets(commands.Cog):
                 ticket_type=data["type"],
                 description=data["description"],
             )
-
+            if not channel:
+                await interaction.followup.send(
+                    "❌ Du hast bereits die maximale Anzahl offener Tickets "
+                    "oder dieses Ticket-Typ ist bereits offen.",
+                    ephemeral=True
+                )
+                return
+            
             await channel.send(
                 "Support kann das Ticket jetzt **claimen** oder **schließen**:",
                 view=TicketChannelView()

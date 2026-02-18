@@ -58,6 +58,37 @@ async def _get_ticket_owner(channel: discord.TextChannel) -> discord.Member | No
 
 
 # ==================================================
+# Ticket Limits (NEU)
+# ==================================================
+
+async def _count_open_tickets(guild: discord.Guild, user_id: int) -> int:
+    cfg = _ticket_cfg()
+    category = guild.get_channel(int(cfg["category_open"]))
+    if not category:
+        return 0
+
+    count = 0
+    for channel in category.channels:
+        if channel.topic and f"user:{user_id}" in channel.topic.lower():
+            count += 1
+    return count
+
+
+async def _has_ticket_of_type(guild: discord.Guild, user_id: int, ticket_type: str) -> bool:
+    cfg = _ticket_cfg()
+    category = guild.get_channel(int(cfg["category_open"]))
+    if not category:
+        return False
+
+    for channel in category.channels:
+        if channel.topic:
+            topic = channel.topic.lower()
+            if f"user:{user_id}" in topic and f"type:{ticket_type.lower()}" in topic:
+                return True
+    return False
+
+
+# ==================================================
 # Ticket erstellen
 # ==================================================
 
@@ -74,6 +105,20 @@ async def create_ticket_channel(
     category = guild.get_channel(int(cfg["category_open"]))
     if not category or not isinstance(category, discord.CategoryChannel):
         raise RuntimeError(f"Ticket-OPEN-Kategorie nicht gefunden: ID {cfg.get('category_open')}")
+    # ============================
+    # LIMIT-PRÜFUNG (NEU)
+    # ============================
+
+    max_open = cfg.get("max_open_per_user", 3)
+
+    existing = await _count_open_tickets(guild, user.id)
+    if existing >= max_open:
+        logger.info(f"Ticket-Limit erreicht für {user} ({existing}/{max_open})")
+        return None
+
+    if await _has_ticket_of_type(guild, user.id, ticket_type):
+        logger.info(f"{user} hat bereits ein Ticket vom Typ {ticket_type}")
+        return None
 
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(view_channel=False),

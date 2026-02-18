@@ -96,9 +96,12 @@ class Tickets(commands.Cog):
             await interaction.followup.send("Ticket-System deaktiviert.", ephemeral=True)
             return
 
-        try:
-            await interaction.response.defer(ephemeral=True)
+        # KEIN zweites defer – Modal hat schon defer gemacht!
+        # Falls du sicher gehen willst:
+        # if not interaction.response.is_done():
+        #     await interaction.response.defer(ephemeral=True)
 
+        try:
             channel = await create_ticket_channel(
                 bot=self.bot,
                 guild=interaction.guild,
@@ -134,14 +137,16 @@ class Tickets(commands.Cog):
 
         custom_id = interaction.data.get("custom_id")
         if custom_id not in ("ticket_claim", "ticket_close"):
-            return
+            return  # Andere Buttons komplett ignorieren
 
         if not config.features.get("tickets", False):
             await interaction.response.send_message("Ticket-System deaktiviert.", ephemeral=True)
             return
 
         try:
-            await interaction.response.defer(ephemeral=True)
+            # defer nur, wenn noch nicht geschehen (sicherer)
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
 
             if custom_id == "ticket_claim":
                 await claim_ticket(

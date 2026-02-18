@@ -98,6 +98,13 @@ tickets:
     #Maximale Anzahl offener Tickets pro User 
     max_open_per_user: 6
 
+twitch:
+  client_id: "8nuj95l45htu2uack2usqzuki9j9oc"
+  client_secret: "6xjs549sy1u43rfqdlf75luo28ri3c"
+  username: "captinchaot"
+  channel-id: 1460995866381779046
+  #announcment_role: role-ID eintragen für Pingrolle bei Twitch-Announcements
+  
 # ... deine bisherigen Sections ...
 
 features:
@@ -112,3 +119,5 @@ features:
   
   # Füge einfach alles hinzu, was du später mal togglen willst
   # Defaults für Prod: meist false, bis du sicher bist
+
+

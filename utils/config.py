@@ -57,5 +57,11 @@ class Config:
     @property
     def welcome_channel(self) -> int | None:
         return int(self.channels.get("welcome_channel", 0))
+    
+    @property
+    def twitch(self) -> dict:
+        twitch = self._data.get("twitch", {})
+        return twitch if isinstance(twitch, dict) else {}
+    
 # Singleton
 config = Config()

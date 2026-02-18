@@ -151,9 +151,9 @@ async def claim_ticket(
         logger.info(f"Claim abgelehnt – unzureichende Berechtigung (Level {level})")
         await channel.send("❌ Du hast keine Berechtigung zum Claimen.", delete_after=15)
         return
-    
-    owner = await _get_ticket_owner(channel)   # ← jetzt async!
-    owner_id = owner.id if owner else "unbekannt"
+    else:
+        owner = await _get_ticket_owner(channel)   # ← jetzt async!
+        owner_id = owner.id if owner else "unbekannt"
 
     if not owner:
         logger.warning(f"Ticket-Owner nicht gefunden – Claim trotzdem durchgeführt")
@@ -195,9 +195,9 @@ async def archive_ticket(
         logger.info(f"Archivieren abgelehnt – unzureichende Berechtigung (Level {level})")
         await channel.send("❌ Du hast keine Berechtigung zum Archivieren.", delete_after=15)
         return
-    
-    cfg = _ticket_cfg()
-    archive_category = channel.guild.get_channel(int(cfg["category_closed"]))
+    else:
+        cfg = _ticket_cfg()
+        archive_category = channel.guild.get_channel(int(cfg["category_closed"]))
     if not archive_category:
         raise RuntimeError("Ticket-ARCHIV-Kategorie nicht gefunden")
 

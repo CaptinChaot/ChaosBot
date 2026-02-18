@@ -116,7 +116,7 @@ class ChaosBot(commands.Bot):
             "tickets":     config.tickets.get("enabled", False),
             "dev":         True,  # ← immer laden für Sync & Debugging
             "welcome":     True,  # ← immer laden
-            "twitch_live": config.features.get("twitch_notifications", False), # ← Twitch Benachrichtigungen nur laden, wenn aktiviert
+            "twitch_live": config.features.get("twitch", False), # ← Twitch Benachrichtigungen nur laden, wenn aktiviert
         }
 
         loaded_cogs = []

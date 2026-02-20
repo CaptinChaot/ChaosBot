@@ -102,7 +102,7 @@ twitch:
   client_id: "8nuj95l45htu2uack2usqzuki9j9oc"
   client_secret: "6xjs549sy1u43rfqdlf75luo28ri3c"
   username: "captinchaot"
-  channel-id: 1460995866381779046
+  announce_channel: 1460995866381779046
   #announcment_role: role-ID eintragen für Pingrolle bei Twitch-Announcements
   
 # ... deine bisherigen Sections ...

@@ -68,8 +68,17 @@ class Roles(commands.Cog):
 
             # Rollen-Whitelist (optional)
             allowed_role_names  = getattr(config, "role_management", {}).get("allowed_roles", [])
-            allowed_role_ids = [int(config.roles.get(name)) for name in allowed_role_names
-                                if config.roles.get(name) and config.roles.get(name).isdigit()]
+            allowed_role_ids = []
+            for name in allowed_role_names:
+                role_id = config.roles.get(name)
+                if role_id is None:
+                    logger.warning(f"Rollen-ID nicht gefunden für '{name}' in config.roles")
+                try:
+                    allowed_role_ids.append(int(role_id))
+                except (ValueError, TypeError):
+                    logger.warning(f"Ungültige Rollen-ID für '{name}' in config.roles: {role_id}")
+                    continue
+
             if allowed_role_ids:
                 if role.id not in allowed_role_ids:
                     await interaction.followup.send(

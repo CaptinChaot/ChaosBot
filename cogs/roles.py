@@ -67,7 +67,7 @@ class Roles(commands.Cog):
                 return
 
             # Rollen-Whitelist (optional)
-            allowed_roles = config.get("role_management", {}).get("allowed_roles")
+            allowed_roles = getattr(config, "role_management", {}).get("allowed_roles", [])
             if allowed_roles:
                 if role.name not in allowed_roles:
                     await interaction.followup.send(

@@ -67,11 +67,13 @@ class Roles(commands.Cog):
                 return
 
             # Rollen-Whitelist (optional)
-            allowed_roles = getattr(config, "role_management", {}).get("allowed_roles", [])
-            if allowed_roles:
-                if role.name not in allowed_roles:
+            allowed_role_names  = getattr(config, "role_management", {}).get("allowed_roles", [])
+            allowed_role_ids = [int(config.roles.get(name)) for name in allowed_role_names
+                                if config.roles.get(name) and config.roles.get(name).isdigit()]
+            if allowed_role_ids:
+                if role.id not in allowed_role_ids:
                     await interaction.followup.send(
-                        "❌ Diese Rolle darf nicht manuell vergeben werden.",
+                        f"❌ Diese Rolle ({role.name}) darf nicht manuell vergeben werden.",
                         ephemeral=True
                     )
                     return

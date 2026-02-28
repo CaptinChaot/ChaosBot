@@ -14,6 +14,9 @@ services:
       - "8001:8000"              # anderer Port, damit Prod 8000 frei hat
     restart: unless-stopped      # oder 'no' zum Testen
     command: python main.py      # explizit, falls du mal was anderes brauchst
+    dns: 
+      - 1.1.1.1             # Cloudflare DNS für schnellere Namensauflösung (optional)
+      - 8.8.8.8            # Google DNS als Fallback (optional)
 
   discordbot-prod:
     build: .
@@ -30,3 +33,7 @@ services:
       - "8000:8000"              # Standard-Port für Prod-API
     restart: unless-stopped      # wichtig – Prod soll immer laufen
     command: python main.py
+    dns:
+      - 1.1.1.1            # Cloudflare DNS für schnellere Namensauflösung (optional)
+      - 8.8.8.8           # Google DNS als Fallback (optional)
+      

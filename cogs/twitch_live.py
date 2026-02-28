@@ -25,6 +25,7 @@ class TwitchLive(commands.Cog):
                     "grant_type": "client_credentials"
                 }
             ) as resp:
+                resp.raise_for_status()
                 data = await resp.json()
                 self.access_token = data.get("access_token")
 
@@ -37,18 +38,30 @@ class TwitchLive(commands.Cog):
             "Authorization": f"Bearer {self.access_token}"
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"https://api.twitch.tv/helix/streams?user_login={config.twitch['username']}",
-                headers=headers
-            ) as resp:
-                stream_data = await resp.json()
+        timeout = aiohttp.ClientTimeout(total=10)
 
-            async with session.get(
-                f"https://api.twitch.tv/helix/users?login={config.twitch['username']}",
-                headers=headers
-            ) as resp:
-                user_data = await resp.json()
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+
+            async def _get_json(url: str):
+                async with session.get(url, headers=headers) as resp:
+                    if resp.status == 401:
+                        self.access_token = None
+                        await self.get_access_token()
+                        headers["Authorization"] = f"Bearer {self.access_token}"
+
+                        async with session.get(url, headers=headers) as retry_resp:
+                            retry_resp.raise_for_status()
+                            return await retry_resp.json()
+
+                    resp.raise_for_status()
+                    return await resp.json()
+
+            stream_data = await _get_json(
+                f"https://api.twitch.tv/helix/streams?user_login={config.twitch['username']}"
+            )
+            user_data = await _get_json(
+                f"https://api.twitch.tv/helix/users?login={config.twitch['username']}"
+            )
 
         return stream_data.get("data", []), user_data.get("data", [])
 
@@ -92,7 +105,11 @@ class TwitchLive(commands.Cog):
 
                 embed.add_field(name="🎮 Spiel", value=game, inline=True)
                 embed.add_field(name="👀 Zuschauer", value=str(viewers), inline=True)
-                embed.add_field(name="⏱ Gestartet", value=f"<t:{int(discord.utils.parse_time(started_at).timestamp())}:R>", inline=True)
+                embed.add_field(
+                    name="⏱ Gestartet",
+                    value=f"<t:{int(discord.utils.parse_time(started_at).timestamp())}:R>",
+                    inline=True
+                )
 
                 embed.set_image(url=thumbnail)
 
@@ -101,15 +118,16 @@ class TwitchLive(commands.Cog):
 
                 embed.set_footer(text="CaptinChaot Community")
 
-                content = ""
-                if role_id:
-                    content = f"<@&{role_id}>"
-
+                content = f"<@&{role_id}>" if role_id else ""
                 await channel.send(content=content, embed=embed)
 
             if not is_live:
                 self.was_live = False
 
+        except aiohttp.ClientConnectorDNSError as e:
+            logger.warning(f"Twitch DNS/Netzproblem: {e}")
+        except aiohttp.ClientError as e:
+            logger.warning(f"Twitch ClientError: {e}")
         except Exception as e:
             logger.exception(f"Twitch Live Fehler: {e}")
 

@@ -123,7 +123,7 @@ class ChaosBot(commands.Bot):
             "tickets":     config.tickets.get("enabled", False),
             "dev":         True,  # ← immer laden für Sync & Debugging
             "welcome":     True,  # ← immer laden
-            "twitch": config.features.get("twitch_notifications", False), # ← Twitch Benachrichtigungen nur laden, wenn aktiviert
+            "twitch_live": config.features.get("twitch_notifications", False), # ← Twitch Benachrichtigungen nur laden, wenn aktiviert
             "member_count": config.features.get("member_count", False), # ← Member Count nur laden, wenn aktiviert
             "welcome": config.features.get("welcome", False), # ← Welcome nur laden, wenn aktiviert
         }

@@ -14,7 +14,6 @@ class AutoHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.automod_cfg = config.automod
-        logger.info(f"AutoHandler initialized with config: {self.automod_cfg}")
         # Spam-Tracking: {guild_id: {user_id: [timestamps]}}
         self._spam_tracker: dict[int, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
 
@@ -56,7 +55,6 @@ class AutoHandler(commands.Cog):
     def _check_message(self, message: discord.Message, member: discord.Member) -> tuple[bool, str]:
         # 1. Blacklist
         blacklist_cfg = self.automod_cfg.get("blacklist", {})
-        logger.info(f"[AutoMod DEBUG] blacklist_cfg: {blacklist_cfg}")    
         if blacklist_cfg.get("enabled", False):
             words = blacklist_cfg.get("words", [])
             content_lower = message.content.lower()

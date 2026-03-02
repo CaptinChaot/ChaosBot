@@ -85,7 +85,7 @@ if bot_env == "dev":
     config._data["features"]["welcome"]               = True
     config._data["features"]["rules_reaction"]        = True
     config._data["features"]["automod"]              = True
-    
+
     #automod
     config._data.setdefault("automod", {})
     config._data["automod"]["enabled"] = True
@@ -111,7 +111,7 @@ for key in config.role_management.get("staff_roles", []):
 # ──────────────────────────────────────────────
 
 intents = discord.Intents.default()
-intents.message_content = False
+intents.message_content = True
 intents.members = True
 intents.reactions = True
 

@@ -86,6 +86,34 @@ moderation:
   warn_ban_threshold: 5
   warn_timeout_threshold: 2
   warn_timeout_duration: 300 # in seconds
+  auto_action_cooldown: 60 # in seconds, Zeit, nach der Warnungen zurückgesetzt werden
+
+automod:
+  enabled: true
+  spam:
+    enabled: true
+    message_limit: 5        # Nachrichten
+    time_window: 5          # Sekunden
+
+  caps:
+    enabled: true
+    threshold: 70           # Prozent Großbuchstaben
+    min_length: 10          # Mindestlänge der Nachricht (kurze Nachrichten ignorieren)
+
+  blacklist:
+    enabled: true
+    words:
+      - "Hurensohn"
+      - "Hure"
+      - "Arschloch"
+      - "Drecksau"
+      - "Fotze"
+      - "Schlampe"
+      - "Wichser"
+      - "Hundesohn"
+      - "Missgeburt"
+      - "Behinderter"
+      
 
 tickets:
   enabled: true
@@ -125,6 +153,7 @@ features:
   member_count: true            # Member-Count-Channel aktualisieren
   welcome: true                 # Welcome-Message + Auto-Assign beim Beitritt 
   rules_reaction: true            # Regeln-Reactions zum Akzeptieren der Regeln
+  automod: true                 # AutoMod (Spam/Caps/Blacklist)
   
   # Füge einfach alles hinzu, was du später mal togglen willst
   # Defaults für Prod: meist false, bis du sicher bist

@@ -84,7 +84,11 @@ if bot_env == "dev":
     config._data["features"]["member_count"]          = True
     config._data["features"]["welcome"]               = True
     config._data["features"]["rules_reaction"]        = True
-
+    config._data["features"]["automod"]              = True
+    
+    #automod
+    config._data.setdefault("automod", {})
+    config._data["automod"]["enabled"] = True
     #rules:
     config._data.setdefault("rules", {})
     config._data["rules"]["message_id"] = 1477895408780050554
@@ -134,6 +138,7 @@ class ChaosBot(commands.Bot):
             "twitch_live": config.features.get("twitch_notifications", False), # ← Twitch Benachrichtigungen nur laden, wenn aktiviert
             "member_count": config.features.get("member_count", False), # ← Member Count nur laden, wenn aktiviert
             "rules_reaction": config.features.get("rules_reaction", False), # ← Rules Reaction nur laden, wenn aktiviert
+            "auto_handler": config.features.get("automod", False), # ← AutoMod nur laden, wenn aktiviert
         }
 
         loaded_cogs = []

@@ -1,6 +1,7 @@
 import discord
 from datetime import timedelta
 from discord import app_commands, Interaction
+from discord import user
 from discord.ext import commands
 from discord.utils import utcnow
 from utils.hardening import can_moderate
@@ -8,7 +9,7 @@ from utils.config import config
 from utils.hardlock import hardlock_check, hardlock_log_line
 from utils.logger import logger, log_to_channel
 from utils.sync import sync_user_state
-from utils.moderation_utils import can_auto_action, handle_auto_actions
+from utils.moderation_utils import handle_auto_actions
 from utils.decorators import require_perm
 from utils.warnings_db import (
     add_warning, count_warnings, delete_warnings as db_delete_warnings, get_warning_by_id,
@@ -17,11 +18,6 @@ from utils.warnings_db import (
 from utils.moderation_actions import (safe_timeout, safe_untimeout, safe_kick, safe_ban, safe_unban, get_auto_action_preview)
 
 mod_cfg = config.moderation
-
-timeout_warn = mod_cfg.get("warn_timeout_threshold", 2)
-timeout_duration = mod_cfg.get("warn_timeout_duration", 300)
-kick_warn = mod_cfg.get("warn_kick_threshold", 3)
-ban_warn = mod_cfg.get("warn_ban_threshold", 5)
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
@@ -160,7 +156,7 @@ class Moderation(commands.Cog):
         except discord.Forbidden:
             pass  # DMs aus → egal, Log zählt
 
-        # Warnung in DB speichern
+        #Warnung in DB speichern
         warning_id = add_warning(
             guild_id=interaction.guild.id,
             user_id=user.id,
@@ -175,20 +171,16 @@ class Moderation(commands.Cog):
         )
 
         # --- Automatische Maßnahmen ---
-        if can_auto_action(interaction, user):
-            action_taken = await handle_auto_actions(
-                bot=self.bot,
-                interaction=interaction,
-                user=user,
-                total_warnings=total_warnings,
-                warning_id=warning_id,
-                timeout_warn=timeout_warn,
-                kick_warn=kick_warn,
-                ban_warn=ban_warn,
-                timeout_duration=timeout_duration
-            )
-            if action_taken:
-                return  # Auto-Aktion 
+        action_taken = await handle_auto_actions(
+            bot=self.bot,
+            guild=interaction.guild,
+            moderator=interaction.user,
+            user=user,
+            total_warnings=total_warnings,
+            warning_id=warning_id,
+        )
+        if action_taken:
+            return
 
         # Modlog Embed
         embed = discord.Embed(
@@ -209,7 +201,7 @@ class Moderation(commands.Cog):
             f"✅ {user.mention} wurde verwarnt.",
             ephemeral=True
         )
-
+        
     @app_commands.command(name="warnings", description="Zeigt die Anzahl der Verwarnungen eines Users an")
     @app_commands.describe(
         user="User, dessen Verwarnungen angezeigt werden sollen"

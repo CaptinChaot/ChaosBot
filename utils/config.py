@@ -71,5 +71,8 @@ class Config:
     def rules(self) -> dict:
         return self._data.get("rules", {})
     
+    @property
+    def automod(self) -> dict:
+        return self._data.get("automod", {})
 # Singleton
 config = Config()

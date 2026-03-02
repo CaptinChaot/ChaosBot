@@ -30,7 +30,8 @@ roles:
 
 channels:
  welcome_channel: 1460995866381779043
- 
+ member_count_vc: 1460995866381779039
+
 log_channels:
   bot: 1460995867334017169
   moderation: 1461013968335409388
@@ -115,7 +116,8 @@ features:
   roles: true                   # Role-Management (Auto-Assign, Sync, etc.)
   tickets: true                # Ticketsystem
   logging: true                # Log-Channel-Features (Moderation, Bot-Logs, etc.)
-  twitch_notifications: false   # Live-Announcements
+  twitch_notifications: true   # Live-Announcements
+  member_count: true            # Member-Count-Channel aktualisieren
   
   # Füge einfach alles hinzu, was du später mal togglen willst
   # Defaults für Prod: meist false, bis du sicher bist

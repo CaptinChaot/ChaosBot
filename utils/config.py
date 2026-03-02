@@ -59,9 +59,13 @@ class Config:
         return int(self.channels.get("welcome_channel", 0))
     
     @property
+    def member_count_vc(self) -> int | None:
+        return int(self.channels.get("member_count_vc", 0))
+    
+    @property
     def twitch(self) -> dict:
         twitch = self._data.get("twitch", {})
         return twitch if isinstance(twitch, dict) else {}
-    
+        
 # Singleton
 config = Config()

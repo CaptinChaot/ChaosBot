@@ -7,11 +7,16 @@ from utils.logger import logger
 class MemberCount(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.channel_id = config["channels"]["member_count_vc"]
+        self.channel_id = config.member_count_vc
+
+        if not self.channel_id:
+            logger.warning("[MemberCount] Kein 'member_count_vc' in config.yaml – Cog wird geladen, aber nicht aktiv. Bitte Channel-ID hinzufügen, um Member-Count-Feature zu nutzen.")
+            return
         self.update_member_count.start()
 
     def cog_unload(self):
-        self.update_member_count.cancel()
+        if self.update_member_count.is_running():
+            self.update_member_count.cancel()
 
     def get_real_member_count(self, guild: discord.Guild) -> int:
         return sum(1 for member in guild.members if not member.bot)

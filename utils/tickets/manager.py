@@ -83,6 +83,7 @@ async def  _count_all_tickets(guild: discord.Guild, user_id: int) -> int:
         for channel in category.channels:
             if channel.topic and f"user:{user_id}" in channel.topic.lower():
                 count += 1
+    return count            
 
 async def _has_ticket_of_type(guild: discord.Guild, user_id: int, ticket_type: str) -> bool:
     cfg = _ticket_cfg()

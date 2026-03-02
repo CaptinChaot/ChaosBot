@@ -14,7 +14,7 @@ class AutoHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.automod_cfg = config.automod
-
+        logger.info(f"AutoHandler initialized with config: {self.automod_cfg}")
         # Spam-Tracking: {guild_id: {user_id: [timestamps]}}
         self._spam_tracker: dict[int, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
 

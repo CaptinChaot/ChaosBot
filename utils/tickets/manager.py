@@ -139,8 +139,8 @@ async def create_ticket_channel(
             view_channel=True, manage_channels=True, manage_messages=True, manage_permissions=True
         )
 
-    prefix = (cfg.get("channel_prefix") or cfg.get("channel_preffix") or "ticket").lower()
-    channel_name = f"{prefix}-{ticket_type}-{user.name}".lower()[:90]
+    ticket_number = await _count_open_tickets(guild, user.id) + 1
+    channel_name = f"{ticket_type}-{user.name}-{ticket_number}".lower()[:90]
     topic = f"OPEN | User:{user.id} | Type:{ticket_type}"
 
     channel = await guild.create_text_channel(

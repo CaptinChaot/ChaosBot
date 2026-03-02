@@ -49,6 +49,7 @@ if bot_env == "dev":
     config._data["channels"]["member_count_vc"] = 1460995866381779039 # Member Count VC
     config._data["channels"]["welcome_channel"] = 1460995866381779043 # Welcome Channel
     config._data["twitch"]["announce_channel"] = 1460995866381779046 # Twitch Ankündigungen (für API)
+    config._data["channels"]["rules_channel"] = 1460995866381779041 # Regeln Channel
 
 
     # Tickets
@@ -82,6 +83,12 @@ if bot_env == "dev":
     config._data["features"]["twitch"]                = True
     config._data["features"]["member_count"]          = True
     config._data["features"]["welcome"]               = True
+    config._data["features"]["rules_reaction"]        = True
+
+    #rules:
+    config._data.setdefault("rules", {})
+    config._data["rules"]["message_id"] = 1477895408780050554
+    config._data["rules"]["reaction_role"] = "member_1" # ← Role, die vergeben wird, wenn User auf Regeln reagiert (z.B. mit ✅)
 
     logger.info("Dev-Modus: Alle Features & Test-IDs aktiviert – Chaos erlaubt! 🚧")
 
@@ -102,6 +109,7 @@ for key in config.role_management.get("staff_roles", []):
 intents = discord.Intents.default()
 intents.message_content = False
 intents.members = True
+intents.reactions = True
 
 init_db()
 
@@ -122,10 +130,10 @@ class ChaosBot(commands.Bot):
             "moderation":  config.features.get("moderation", False),
             "tickets":     config.tickets.get("enabled", False),
             "dev":         True,  # ← immer laden für Sync & Debugging
-            "welcome":     True,  # ← immer laden
+            "welcome":     config.features.get("welcome", False), # ← Welcome nur laden, wenn aktiviert
             "twitch_live": config.features.get("twitch_notifications", False), # ← Twitch Benachrichtigungen nur laden, wenn aktiviert
             "member_count": config.features.get("member_count", False), # ← Member Count nur laden, wenn aktiviert
-            "welcome": config.features.get("welcome", False), # ← Welcome nur laden, wenn aktiviert
+            "rules_reaction": config.features.get("rules_reaction", False), # ← Rules Reaction nur laden, wenn aktiviert
         }
 
         loaded_cogs = []

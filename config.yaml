@@ -15,6 +15,10 @@ role_management:
     - member_3
     - member_4
 
+rules:
+ message_id: 1058835740743700500
+ reaction_role: member_1 # ← Role, die vergeben wird, wenn User auf Regeln reagiert (z.B. mit ✅)
+
 roles:
   bot: 1461009559048032361
   owner: 1460995865731793089
@@ -31,6 +35,7 @@ roles:
 channels:
  welcome_channel: 1058822264403017763
  member_count_vc: 1247579330784002130
+ rules_channel: 1058822264860188672
 
 log_channels:
   bot: 1058822265631940712
@@ -119,6 +124,7 @@ features:
   twitch_notifications: true   # Live-Announcements
   member_count: true            # Member-Count-Channel aktualisieren
   welcome: true                 # Welcome-Message + Auto-Assign beim Beitritt 
+  rules_reaction: true            # Regeln-Reactions zum Akzeptieren der Regeln
   
   # Füge einfach alles hinzu, was du später mal togglen willst
   # Defaults für Prod: meist false, bis du sicher bist

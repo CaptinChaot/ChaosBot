@@ -66,6 +66,10 @@ class Config:
     def twitch(self) -> dict:
         twitch = self._data.get("twitch", {})
         return twitch if isinstance(twitch, dict) else {}
-        
+    
+    @property
+    def rules(self) -> dict:
+        return self._data.get("rules", {})
+    
 # Singleton
 config = Config()

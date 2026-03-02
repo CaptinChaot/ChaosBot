@@ -149,7 +149,7 @@ async def create_ticket_channel(
             view_channel=True, manage_channels=True, manage_messages=True, manage_permissions=True
         )
 
-    ticket_number = await _count_all_tickets(guild, user.id) + 1
+    ticket_number = (await _count_all_tickets(guild, user.id)) + 1
     channel_name = f"{ticket_type}-{user.name}-{ticket_number}".lower()[:90]
     topic = f"OPEN | User:{user.id} | Type:{ticket_type}"
 

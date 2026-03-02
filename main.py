@@ -96,6 +96,7 @@ for key in config.role_management.get("staff_roles", []):
 
 intents = discord.Intents.default()
 intents.message_content = False
+intents.members = True
 
 init_db()
 

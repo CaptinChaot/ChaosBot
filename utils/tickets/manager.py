@@ -73,6 +73,16 @@ async def _count_open_tickets(guild: discord.Guild, user_id: int) -> int:
             count += 1
     return count
 
+async def  _count_all_tickets(guild: discord.Guild, user_id: int) -> int:
+    cfg = _ticket_cfg()
+    count = 0
+    for cat_key in ["category_open", "category_closed"]:
+        category = guild.get_channel(int(cfg[cat_key]))
+        if not category:
+            continue
+        for channel in category.channels:
+            if channel.topic and f"user:{user_id}" in channel.topic.lower():
+                count += 1
 
 async def _has_ticket_of_type(guild: discord.Guild, user_id: int, ticket_type: str) -> bool:
     cfg = _ticket_cfg()
@@ -139,7 +149,7 @@ async def create_ticket_channel(
             view_channel=True, manage_channels=True, manage_messages=True, manage_permissions=True
         )
 
-    ticket_number = await _count_open_tickets(guild, user.id) + 1
+    ticket_number = await _count_all_tickets(guild, user.id) + 1
     channel_name = f"{ticket_type}-{user.name}-{ticket_number}".lower()[:90]
     topic = f"OPEN | User:{user.id} | Type:{ticket_type}"
 

@@ -28,7 +28,9 @@ async def sync_user_state(
         if db_timeout > utcnow():
             await member.timeout(db_timeout, reason="Sync: DB → Discord")
             actions.append("Timeout aus DB erneut gesetzt")
-
+    else:
+        clear_timeout(guild.id, member.id)
+        actions.append("Abgelaufenen Timeout aus DB gelöscht")
     # Discord -> DB
     if discord_timeout and not db_timeout:
         save_timeout(guild.id, member.id, member.timed_out_until)

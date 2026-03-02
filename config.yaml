@@ -29,12 +29,12 @@ roles:
   member_4: 1460995865329270971 #Godly-Gamer
 
 channels:
- welcome_channel: 1460995866381779043
- member_count_vc: 1460995866381779039
+ welcome_channel: 1058822264403017763
+ member_count_vc: 1247579330784002130
 
 log_channels:
-  bot: 1460995867334017169
-  moderation: 1461013968335409388
+  bot: 1058822265631940712
+  moderation: 1247568105488519314
 
 #Permlevel: MEMBER =0 / SUPPORT =5 / MOD =10 /ADMIN =20 / DEV =30 / CO_OWNER = 35 / OWNER = 40
 permissions:
@@ -85,9 +85,9 @@ moderation:
 tickets:
   enabled: true
   #Kategorie für offene Tickets
-  category_open: 1469741779346657425
+  category_open: 1473716570986381482
   #Kategorie für closed Tickets
-  category_closed: 1469741852507766927
+  category_closed: 1473716780131287322
   #Wer darf Tickets sehen
   support_min_level: 5
   #Channel-Nameing
@@ -103,7 +103,7 @@ twitch:
   client_id: "8nuj95l45htu2uack2usqzuki9j9oc"
   client_secret: "6xjs549sy1u43rfqdlf75luo28ri3c"
   username: "captinchaot"
-  announce_channel: 1460995866381779046
+  announce_channel: 1089487400172003338
   #announcment_role: role-ID eintragen für Pingrolle bei Twitch-Announcements
   
 # ... deine bisherigen Sections ...
@@ -118,6 +118,7 @@ features:
   logging: true                # Log-Channel-Features (Moderation, Bot-Logs, etc.)
   twitch_notifications: true   # Live-Announcements
   member_count: true            # Member-Count-Channel aktualisieren
+  welcome: true                 # Welcome-Message + Auto-Assign beim Beitritt 
   
   # Füge einfach alles hinzu, was du später mal togglen willst
   # Defaults für Prod: meist false, bis du sicher bist

@@ -44,13 +44,17 @@ if bot_env == "dev":
 
     # Log-Channels
     config._data.setdefault("log_channels", {})
-    config._data["log_channels"]["bot"] = 1460995867334017169
-    config._data["log_channels"]["moderation"] = 1461013968335409388
+    config._data["log_channels"]["bot"] = 1460995867334017169 
+    config._data["log_channels"]["moderation"] = 1461013968335409388 
+    config._data["channels"]["member_count_vc"] = 1460995866381779039 # Member Count VC
+    config._data["channels"]["welcome_channel"] = 1460995866381779043 # Welcome Channel
+    config._data["twitch"]["announce_channel"] = 1460995866381779046 # Twitch Ankündigungen (für API)
+
 
     # Tickets
     config._data.setdefault("tickets", {})
     config._data["tickets"]["enabled"] = True
-    config._data["tickets"]["category_open"] = 1469741779346657425
+    config._data["tickets"]["category_open"] = 1469741779346657425 
     config._data["tickets"]["category_closed"] = 1469741852507766927
 
     # Roles
@@ -77,6 +81,7 @@ if bot_env == "dev":
     config._data["features"]["tickets"]               = True   # ← zum Debuggen True
     config._data["features"]["twitch"]                = True
     config._data["features"]["member_count"]          = True
+    config._data["features"]["welcome"]               = True
 
     logger.info("Dev-Modus: Alle Features & Test-IDs aktiviert – Chaos erlaubt! 🚧")
 
@@ -118,8 +123,9 @@ class ChaosBot(commands.Bot):
             "tickets":     config.tickets.get("enabled", False),
             "dev":         True,  # ← immer laden für Sync & Debugging
             "welcome":     True,  # ← immer laden
-            "twitch_live": config.features.get("twitch_notifications", False), # ← Twitch Benachrichtigungen nur laden, wenn aktiviert
+            "twitch": config.features.get("twitch_notifications", False), # ← Twitch Benachrichtigungen nur laden, wenn aktiviert
             "member_count": config.features.get("member_count", False), # ← Member Count nur laden, wenn aktiviert
+            "welcome": config.features.get("welcome", False), # ← Welcome nur laden, wenn aktiviert
         }
 
         loaded_cogs = []

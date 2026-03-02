@@ -257,17 +257,17 @@ async def archive_ticket(
         raise RuntimeError("Ticket-ARCHIV-Kategorie nicht gefunden")
 
     overwrites = channel.overwrites.copy()
+    owner = await _get_ticket_owner(channel)
 
     if cfg.get("archive", {}).get("hide_from_user", True):
-        owner = await _get_ticket_owner(channel)
         if owner:
             overwrites[owner] = discord.PermissionOverwrite(view_channel=False)
     try:
-
+        owner_id = owner.id if owner else "unbekannt"
         await channel.edit(
             category=archive_category,
             overwrites=overwrites,
-            topic=f"ARCHIVED | ClosedBy:{closed_by.id}",
+            topic=f"ARCHIVED |User:{owner_id} | ClosedBy:{closed_by.id}",
          reason=f"Ticket archiviert von {closed_by}",
         )
 

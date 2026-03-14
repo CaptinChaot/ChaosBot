@@ -40,7 +40,7 @@ if bot_env == "dev":
     logger.info("Dev-Overrides: Test-IDs + volle Features")
 
     # Wichtig: config._data direkt überschreiben (internes Dict!)
-    config._data["guild_id"] = 1460995865329270964
+    config._data["guild_id"] = 1460995865329270964 # ← Testserver ID
 
     # Log-Channels
     config._data.setdefault("log_channels", {})

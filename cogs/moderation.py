@@ -572,11 +572,15 @@ class Moderation(commands.Cog):
         )
         auto_action_preview = get_auto_action_preview(total_warnings)
 
-        last_action = get_last_auto_action(
+        last_action_data = get_last_auto_action(
             guild_id=interaction.guild.id,
             user_id=user.id
-        ) or "Keine"
-
+        ) 
+        if last_action_data:
+            last_action_at = discord.utils.format_dt(last_action_data["at"], style="F")
+            last_action = f"{last_action_data['type']} ({last_action_at})"
+        else:  
+            last_action = "Keine automatischen Maßnahmen"
         # timeout info
         discord_timeout = user.is_timed_out()
         discord_timeout_until = (discord.utils.format_dt(user.timed_out_until, style="F") 

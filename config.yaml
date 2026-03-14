@@ -137,9 +137,7 @@ twitch:
   client_secret: "6xjs549sy1u43rfqdlf75luo28ri3c"
   username: "captinchaot"
   announce_channel: 1089487400172003338
-  #announcment_role: role-ID eintragen für Pingrolle bei Twitch-Announcements
-  
-# ... deine bisherigen Sections ...
+  announcment_role: 1482313970537857195
 
 features:
   admin: true                  # admin commands (Reload, Dev-Panel, etc.)

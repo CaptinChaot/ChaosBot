@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
 ![discord.py](https://img.shields.io/badge/discord.py-2.x-5865F2?logo=discord)
-![License](https://img.shields.io/badge/License-None-lightgrey)
+![License](https://img.shields.io/badge/License-AGPL%20v3-blue)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
 ---
@@ -66,8 +66,8 @@ Folgende Berechtigungen werden für den vollen Funktionsumfang benötigt:
 
 #### 1. Repository klonen
 ```bash
-git clone https://github.com/dein-username/chaosbot.git
-cd chaosbot
+git clone https://github.com/CaptinChaot/Discord_Bot.git
+cd Discord_Bot
 ```
 
 #### 2. Umgebungsvariablen setzen
@@ -286,8 +286,8 @@ The following permissions are required for full functionality:
 
 #### 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/chaosbot.git
-cd chaosbot
+git clone https://github.com/CaptinChaot/Discord_Bot.git
+cd Discord_Bot
 ```
 
 #### 2. Set environment variables

@@ -94,9 +94,9 @@ class Birthday(commands.Cog):
     async def before_check_birthdays(self):
         await self.bot.wait_until_ready()
 
-    async def setup(bot: commands.Bot):
-        if config.features.get("birthday", False):
-            await bot.add_cog(Birthday(bot))
-            logger.info("Birthday Cog loaded")
-        else:
-            logger.info("Birthday Cog not loaded")
+async def setup(bot: commands.Bot):
+    if config.features.get("birthday", False):
+        await bot.add_cog(Birthday(bot))
+        logger.info("Birthday Cog loaded")
+    else:
+        logger.info("Birthday Cog not loaded")

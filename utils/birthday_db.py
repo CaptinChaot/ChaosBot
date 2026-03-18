@@ -49,3 +49,10 @@ def get_todays_birthdays(guild_id: int, day: int, month: int) -> list[int]:
             (guild_id, day, month),
         )
         return [row[0] for row in cur.fetchall()]
+    
+def delete_birthday(guild_id: int, user_id: int):
+    with get_connection() as conn:
+        conn.execute(
+            "DELETE FROM birthdays WHERE guild_id = ? AND user_id = ?",
+            (guild_id, user_id)
+        )

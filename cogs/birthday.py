@@ -4,7 +4,7 @@ from discord.ext import commands, tasks
 from discord import app_commands
 from utils.config import config
 from utils.logger import logger
-from utils.birthday_db import (save_birthday, get_birthday, get_todays_birthdays)
+from utils.birthday_db import (save_birthday, get_birthday, get_todays_birthdays, delete_birthday)
 
 
 class Birthday(commands.Cog):
@@ -94,9 +94,15 @@ class Birthday(commands.Cog):
     async def before_check_birthdays(self):
         await self.bot.wait_until_ready()
 
+@commands.Cog.listener()
+async def on_member_remove(self, member):
+    delete_birthday(member.guild_id, member.id)
+    logger.info(f"Deleted birthday for {member} (ID: {member.id}).")
+    
 async def setup(bot: commands.Bot):
     if config.features.get("birthday", False):
         await bot.add_cog(Birthday(bot))
         logger.info("Birthday Cog loaded")
     else:
         logger.info("Birthday Cog not loaded")
+

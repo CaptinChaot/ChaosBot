@@ -9,8 +9,8 @@ from utils.birthday_db import (save_birthday, get_birthday, get_todays_birthdays
 
 class Birthday(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot,
-        self.channel_id = config.get("birthday_channel_id", 0)
+        self.bot = bot
+        self.channel_id = config.birthday.get("channel_id", 0)
         self.check_birthdays.start()
 
     def cog_unload(self):
@@ -18,7 +18,7 @@ class Birthday(commands.Cog):
 
 
     @app_commands.command(name="set_birthday", description="trage dein Geburtstag ein")
-    @app_commands.describe(birthday="Dein Geburtstag im Format TT.MM.JJJJ")
+    @app_commands.describe(tag="Tag (1-31)", monat="Monat (1-12)", jahr="Jahr")
     async def set_birthday(self, interaction: discord.Interaction, tag: int, monat: int, jahr: int):
         await interaction.response.defer(ephemeral=True)
 
@@ -59,44 +59,44 @@ class Birthday(commands.Cog):
             ephemeral=True
         )
 
-@tasks.loop(hours=24)
-async def check_birthdays(self):
-    now = datetime.now()
-    if now.hour != 0:
-        return
-    if not self.channel_id:
-        return
+    @tasks.loop(hours=24)
+    async def check_birthdays(self):
+        now = datetime.now()
+        if now.hour != 0:
+            return
+        if not self.channel_id:
+            return
     
-    channel = self.bot.get_channel(self.channel_id)
-    if not channel:
-        logger.warning(f"Birthday channel {self.channel_id} not found.")
-        return
+        channel = self.bot.get_channel(self.channel_id)
+        if not channel:
+            logger.warning(f"Birthday channel {self.channel_id} not found.")
+            return
     
-    user_ids = get_todays_birthdays(channel.guild_id, now.day, now.month)
-    for user_id in user_ids:
-        member = channel.guild.get_member(user_id)
-        if not member:
-            continue
+        user_ids = get_todays_birthdays(channel.guild_id, now.day, now.month)
+        for user_id in user_ids:
+            member = channel.guild.get_member(user_id)
+            if not member:
+                continue
 
-        bd = get_birthday(channel.guild_id, user_id)
-        age = now.year - bd['year']
+            bd = get_birthday(channel.guild_id, user_id)
+            age = now.year - bd['year']
 
-        embed = discord.Embed(
-            title="🎉 Happy Birthday! 🎉",
-            description=f"Alles Gute zum Geburtstag, {member.mention}! 🎂\nDu wirst heute **{age} Jahre** alt!",
-            color=discord.Color.gold()
-        )
-        embed.set_thumbnail(url=member.display_avatar.url)
-        await channel.send(embed=embed)
-        logger.info(f"Birthday announcement sent for {member}")
+            embed = discord.Embed(
+                title="🎉 Happy Birthday! 🎉",
+                description=f"Alles Gute zum Geburtstag, {member.mention}! 🎂\nDu wirst heute **{age} Jahre** alt!",
+                color=discord.Color.gold()
+            )
+            embed.set_thumbnail(url=member.display_avatar.url)
+            await channel.send(embed=embed)
+            logger.info(f"Birthday announcement sent for {member}")
 
-@check_birthdays.before_loop
-async def before_check_birthdays(self):
-    await self.bot.wait_until_ready()
+    @check_birthdays.before_loop
+    async def before_check_birthdays(self):
+        await self.bot.wait_until_ready()
 
-async def setup(bot: commands.Bot):
-    if config.features.get("birthday", False):
-        await bot.add_cog(Birthday(bot))
-        logger.info("Birthday Cog loaded")
-    else:
-        logger.info("Birthday Cog not loaded")
+    async def setup(bot: commands.Bot):
+        if config.features.get("birthday", False):
+            await bot.add_cog(Birthday(bot))
+            logger.info("Birthday Cog loaded")
+        else:
+            logger.info("Birthday Cog not loaded")

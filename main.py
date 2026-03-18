@@ -100,6 +100,7 @@ if bot_env == "dev":
     #birthday
     config._data.setdefault("birthday", {})
     config._data["birthday"]["enabled"] = True
+    config._data["features"]["birthday"] = True
     config._data["birthday"]["channel_id"] = 1483841274120503365 # ← Birthday Channel
 
     logger.info("Dev-Modus: Alle Features & Test-IDs aktiviert – Chaos erlaubt! 🚧")

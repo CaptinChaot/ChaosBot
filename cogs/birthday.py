@@ -37,7 +37,7 @@ class Birthday(commands.Cog):
                                         ephemeral=True)
         logger.info(f"[Birthday] {interaction.user}  →  {tag:02d}.{monat:02d}.{jahr}")
 
-    @app_commands.command(name="Birthday", description="Zeigt deinen Geburtstag an")
+    @app_commands.command(name="birthday", description="Zeigt deinen Geburtstag an")
     async def birthday(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 

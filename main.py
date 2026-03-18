@@ -12,6 +12,8 @@ from utils.hardening import STAFF_ROLE_IDS
 from utils.config import config
 from discord import app_commands
 from utils.warnings_db import init_db
+from utils.birthday_db import init_birthday_db
+
 
 # ──────────────────────────────────────────────
 # 1. Umgebung erkennen & .env laden
@@ -50,6 +52,7 @@ if bot_env == "dev":
     config._data["channels"]["welcome_channel"] = 1460995866381779043 # Welcome Channel
     config._data["twitch"]["announce_channel"] = 1460995866381779046 # Twitch Ankündigungen (für API)
     config._data["channels"]["rules_channel"] = 1460995866381779041 # Regeln Channel
+
 
 
     # Tickets
@@ -94,6 +97,11 @@ if bot_env == "dev":
     config._data["rules"]["message_id"] = 1477895408780050554
     config._data["rules"]["reaction_role"] = "member_1" # ← Role, die vergeben wird, wenn User auf Regeln reagiert (z.B. mit ✅)
 
+    #birthday
+    config._data.setdefault("birthday", {})
+    config._data["birthday"]["enabled"] = True
+    config._data["birthday"]["channel_id"] = 1483841274120503365 # ← Birthday Channel
+
     logger.info("Dev-Modus: Alle Features & Test-IDs aktiviert – Chaos erlaubt! 🚧")
 
 else:
@@ -116,7 +124,7 @@ intents.members = True
 intents.reactions = True
 
 init_db()
-
+init_birthday_db()
 class ChaosBot(commands.Bot):
     def __init__(self):
         super().__init__(
@@ -128,17 +136,18 @@ class ChaosBot(commands.Bot):
     async def setup_hook(self):
         # Alle Cogs mit ihrer Ladebedingung
         cogs = {
-            "admin":       config.features.get("admin", False),
-            "fun":         config.features.get("fun", False),
-            "roles":       config.features.get("roles", False),
-            "moderation":  config.features.get("moderation", False),
-            "tickets":     config.tickets.get("enabled", False),
-            "dev":         True,  # ← immer laden für Sync & Debugging
-            "welcome":     config.features.get("welcome", False), # ← Welcome nur laden, wenn aktiviert
-            "twitch_live": config.features.get("twitch_notifications", False), # ← Twitch Benachrichtigungen nur laden, wenn aktiviert
-            "member_count": config.features.get("member_count", False), # ← Member Count nur laden, wenn aktiviert
-            "rules_reaction": config.features.get("rules_reaction", False), # ← Rules Reaction nur laden, wenn aktiviert
-            "auto_handler": config.features.get("automod", False), # ← AutoMod nur laden, wenn aktiviert
+            "admin":            config.features.get("admin", False),
+            "fun":              config.features.get("fun", False),
+            "roles":            config.features.get("roles", False),
+            "moderation":       config.features.get("moderation", False),
+            "tickets":          config.tickets.get("enabled", False),
+            "dev":              True,  # ← immer laden für Sync & Debugging
+            "welcome":          config.features.get("welcome", False), # ← Welcome nur laden, wenn aktiviert
+            "twitch_live":      config.features.get("twitch_notifications", False), # ← Twitch Benachrichtigungen nur laden, wenn aktiviert
+            "member_count":     config.features.get("member_count", False), # ← Member Count nur laden, wenn aktiviert
+            "rules_reaction":   config.features.get("rules_reaction", False), # ← Rules Reaction nur laden, wenn aktiviert
+            "auto_handler":     config.features.get("automod", False), # ← AutoMod nur laden, wenn aktiviert
+            "birthday":         config.features.get("birthday", False), # ← Birthday nur laden, wenn aktiviert
         }
 
         loaded_cogs = []

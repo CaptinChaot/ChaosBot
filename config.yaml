@@ -139,6 +139,9 @@ twitch:
   announce_channel: 1089487400172003338
   announce_role: 1482313970537857195
 
+birthday:
+  channel_id: 1483838969442598992
+
 features:
   admin: true                  # admin commands (Reload, Dev-Panel, etc.)
   dev: true                     # Dev-Panel + Debug-Features
@@ -152,8 +155,5 @@ features:
   welcome: true                 # Welcome-Message + Auto-Assign beim Beitritt 
   rules_reaction: true            # Regeln-Reactions zum Akzeptieren der Regeln
   automod: true                 # AutoMod (Spam/Caps/Blacklist)
+  birthday: false                # Geburtstags-Feature (Geburtstagsdatenbank, Geburtstagsgrüße, etc.)
   
-  # Füge einfach alles hinzu, was du später mal togglen willst
-  # Defaults für Prod: meist false, bis du sicher bist
-
-

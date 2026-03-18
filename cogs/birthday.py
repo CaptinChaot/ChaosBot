@@ -1,5 +1,6 @@
 import discord
 from datetime import datetime
+from discord import member
 from discord.ext import commands, tasks
 from discord import app_commands
 from utils.config import config
@@ -94,11 +95,11 @@ class Birthday(commands.Cog):
     async def before_check_birthdays(self):
         await self.bot.wait_until_ready()
 
-@commands.Cog.listener()
-async def on_member_remove(self, member):
-    delete_birthday(member.guild_id, member.id)
-    logger.info(f"Deleted birthday for {member} (ID: {member.id}).")
-    
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        delete_birthday(member.guild.id, member.id)
+        logger.info(f"Deleted birthday for {member} (ID: {member.id}).")
+
 async def setup(bot: commands.Bot):
     if config.features.get("birthday", False):
         await bot.add_cog(Birthday(bot))

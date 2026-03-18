@@ -12,7 +12,7 @@ class Welcome(commands.Cog):
         # {avatar} → wird später durch Avatar-URL ersetzt
         self.welcome_templates = [
             "Herzlich Willkommen {mention}! Schön dich hier zu sehen 😊",
-            "Hey {mentation}, willkommen im Chaos! 🔥",
+            "Hey {mention}, willkommen im Chaos! 🔥",
             "Willkommen {mention}! Lass den Spaß beginnen 🎉",
             "Na {mention}, bereit für Trouble? 😈",
             "Hallo {mention}! Schön, dass du da bist ❤️",

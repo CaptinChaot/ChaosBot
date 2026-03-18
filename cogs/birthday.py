@@ -49,7 +49,7 @@ class Birthday(commands.Cog):
         today =datetime.now()
         age = today.year - bd['year'] - ((today.month, today.day) < (bd['month'], bd['day']))
         next_bd = datetime(today.year, bd['month'], bd['day'])
-        if next_bd.date() < today:
+        if next_bd.date() < today.date():
             next_bd = datetime(year=today.year + 1, month=bd['month'], day=bd['day'])
 
         await interaction.followup.send(

@@ -8,16 +8,15 @@ class Welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        # Liste von Templates – {user} wird durch den User ersetzt
         # {mention} → @User
         # {avatar} → wird später durch Avatar-URL ersetzt
         self.welcome_templates = [
             "Herzlich Willkommen {mention}! Schön dich hier zu sehen 😊",
-            "Hey {user}, willkommen im Chaos! 🔥",
+            "Hey {mentation}, willkommen im Chaos! 🔥",
             "Willkommen {mention}! Lass den Spaß beginnen 🎉",
-            "Na {user}, bereit für Trouble? 😈",
+            "Na {mention}, bereit für Trouble? 😈",
             "Hallo {mention}! Schön, dass du da bist ❤️",
-            "{user} ist gerade dem Server beigetreten – alle Augen auf ihn! 👀",
+            "{mention} ist gerade dem Server beigetreten – alle Augen auf ihn! 👀",
             "Willkommen im Club, {mention}! 🍻",
         ]
 

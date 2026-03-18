@@ -78,5 +78,6 @@ class Config:
     @property
     def birthday(self) -> dict:
         return self._data.get("birthday", {})
+    
 # Singleton
 config = Config()

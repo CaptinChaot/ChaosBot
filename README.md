@@ -33,6 +33,7 @@ ChaosBot ist ein vollständiger Discord-Bot gebaut mit **discord.py**, der eine 
 | 🛡️ **Role Management** | Automatische Rollenverwaltung und Synchronisierung |
 | 📋 **Moderation Commands** | Vollständige Moderationskommandos (Warn/Kick/Ban/Timeout etc.) |
 | 🔒 **Permission System** | Stufenbasiertes Berechtigungssystem (Member bis Owner) |
+| 🎂 **Geburtstags-Reminder** | Geburtstagsreminder, der die Tage in der dB. speichert |
 
 ---
 
@@ -214,6 +215,8 @@ features:
 | `/userinfo` | User-Informationen anzeigen | SUPPORT (5) |
 | `/sync_user` | DB mit Discord synchronisieren | DEV (30) |
 | `/send_ticket_panel` | Ticket-Panel senden | DEV (30) |
+| `/set_birthday` | Geburtstag setzen | MEMBER |
+| `/birthday` | Geburtstag einsehen | MEMBER |
 
 ---
 
@@ -253,6 +256,8 @@ ChaosBot is a full-featured Discord bot built with **discord.py**, offering a wi
 | 🛡️ **Role Management** | Automatic role management and synchronization |
 | 📋 **Moderation Commands** | Full moderation commands (Warn/Kick/Ban/Timeout etc.) |
 | 🔒 **Permission System** | Level-based permission system (Member to Owner) |
+| 🔒 **Birthday-Reminder** | Birthday-Reminder - saves Days in the dB |
+
 
 ---
 
@@ -343,6 +348,8 @@ See the German section above for a fully annotated `config.yaml` – all keys an
 | `/userinfo` | Show user information | SUPPORT (5) |
 | `/sync_user` | Sync DB with Discord | DEV (30) |
 | `/send_ticket_panel` | Send ticket panel | DEV (30) |
+| `/set_birthday` | Set your Birthday | MEMBER |
+| `/birthdayl` | Watch your Birthday | MEMBER |
 
 ---
 

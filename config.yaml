@@ -155,5 +155,5 @@ features:
   welcome: true                 # Welcome-Message + Auto-Assign beim Beitritt 
   rules_reaction: true            # Regeln-Reactions zum Akzeptieren der Regeln
   automod: true                 # AutoMod (Spam/Caps/Blacklist)
-  birthday: false                # Geburtstags-Feature (Geburtstagsdatenbank, Geburtstagsgrüße, etc.)
+  birthday: true                # Geburtstags-Feature (Geburtstagsdatenbank, Geburtstagsgrüße, etc.)
   

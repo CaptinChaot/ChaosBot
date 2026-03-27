@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChaosBot • Mod Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            chaosRed: '#ff1a1a',
+            chaosDark: '#050505',
+            chaosPanel: '#090909',
+          },
+          boxShadow: {
+            glow: '0 0 26px rgba(255, 26, 26, 0.62)',
+            glowSoft: '0 0 14px rgba(255, 26, 26, 0.42)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .hud-bg {
+      background:
+        radial-gradient(80% 60% at 20% 10%, rgba(255,26,26,0.16), transparent 55%),
+        radial-gradient(70% 60% at 80% 90%, rgba(255,26,26,0.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,26,26,0.06), transparent 22%, rgba(255,26,26,0.03));
+    }
+    .hud-grid::before {
+      content:"";
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 46px 46px;
+      opacity: .14;
+      pointer-events:none;
+      mask-image: radial-gradient(circle at 50% 20%, black 0%, black 40%, transparent 72%);
+    }
+    .hud-scanlines::after {
+      content:"";
+      position:absolute; inset:0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.05),
+        rgba(255,255,255,0.05) 1px,
+        transparent 1px,
+        transparent 6px
+      );
+      opacity: .08;
+      pointer-events:none;
+    }
+    .corner-brackets { position: relative; }
+    .corner-brackets::before,
+    .corner-brackets::after {
+      content:"";
+      position:absolute;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,26,26,0.55);
+      filter: drop-shadow(0 0 10px rgba(255,26,26,0.35));
+      pointer-events:none;
+    }
+    .corner-brackets::before { top:10px; left:10px; border-right:0; border-bottom:0; }
+    .corner-brackets::after  { bottom:10px; right:10px; border-left:0; border-top:0; }
+    @keyframes hudPulse { 0%,100%{ opacity:.55 } 50%{ opacity:.95 } }
+    .hud-pulse { animation: hudPulse 3.2s ease-in-out infinite; }
+    @keyframes floatIn { from { transform: translateY(-6px); opacity:0 } to { transform: translateY(0); opacity:1 } }
+    .log-item { animation: floatIn .18s ease-out; }
+  </style>
+</head>
+
+<body class="bg-black text-gray-200 font-mono min-h-screen flex relative overflow-x-hidden">
+  <div class="absolute inset-0 hud-bg hud-grid hud-scanlines pointer-events-none"></div>
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-[#030303] border-r border-gray-800 fixed h-full flex flex-col p-6 gap-6 z-10">
+    <div class="flex items-center gap-3">
+      <img src="/web/assets/CHAOSBOT_LOGO.png" alt="ChaosBot Logo"
+           class="w-11 h-11 rounded-lg border border-gray-800 shadow-glowSoft" />
+      <div>
+        <h1 class="text-lg font-bold text-white tracking-wide">ChaosBot</h1>
+        <p class="text-xs text-gray-500">Mod Panel • V3</p>
+      </div>
+    </div>
+
+    <!-- User Info -->
+    <div class="bg-chaosPanel border border-gray-800 rounded-xl p-3 text-xs space-y-2 corner-brackets">
+      <div class="flex items-center gap-2">
+        <img id="userAvatar" src="" alt="" class="w-8 h-8 rounded-full border border-gray-700 hidden" />
+        <div>
+          <div class="text-white font-semibold" id="userName">—</div>
+          <div id="userRoleBadge" class="mt-1 px-2 py-0.5 rounded-full text-xs bg-yellow-900/60 text-yellow-200 border border-yellow-600/60 inline-block">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Server Stats -->
+    <div class="bg-chaosPanel border border-gray-800 rounded-xl p-3 text-xs space-y-1 corner-brackets">
+      <div class="flex justify-between"><span class="text-gray-400">Server</span><span class="text-white" id="serverName">—</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Users</span><span class="text-green-400" id="serverUsers">—</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Bot</span><span class="text-green-400" id="botStatus">—</span></div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex flex-col gap-2 text-sm">
+      <button onclick="showSection('dashboard')" class="nav-btn px-3 py-2 rounded-lg bg-chaosPanel border border-chaosRed/60 shadow-glowSoft text-left">
+        🖥️ Dashboard
+      </button>
+      <button onclick="showSection('modactions')" class="nav-btn px-3 py-2 rounded-lg bg-chaosPanel border border-gray-800 hover:border-chaosRed/60 hover:shadow-glowSoft transition text-left">
+        ⚔️ Mod Actions
+      </button>
+      <button onclick="showSection('users')" class="nav-btn px-3 py-2 rounded-lg bg-chaosPanel border border-gray-800 hover:border-chaosRed/60 hover:shadow-glowSoft transition text-left">
+        👥 Users
+      </button>
+      <button onclick="showSection('logs')" class="nav-btn px-3 py-2 rounded-lg bg-chaosPanel border border-gray-800 hover:border-chaosRed/60 hover:shadow-glowSoft transition text-left">
+        📋 Logs
+      </button>
+    </nav>
+
+    <div class="mt-auto space-y-3">
+      <button id="btnLogout"
+        class="w-full px-3 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-chaosRed/60 hover:text-white transition text-sm">
+        Logout
+      </button>
+      <div class="text-xs text-gray-500 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-chaosRed hud-pulse"></span>
+        <span>CC HUD mode</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="ml-64 flex-1 p-10 space-y-8 relative z-10">
+
+    <header class="flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl text-white font-semibold tracking-wide" id="sectionTitle">Dashboard</h2>
+        <p class="text-xs text-gray-500">ChaosBot Mod Control Center</p>
+      </div>
+    </header>
+
+    <!-- SECTION: Dashboard -->
+    <section id="sec-dashboard" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-chaosPanel border border-gray-800 rounded-xl p-6 hover:shadow-glow transition corner-brackets">
+          <p class="text-xs text-gray-500">Server Members</p>
+          <h3 class="text-3xl font-bold text-white mt-2" id="memberCount">—</h3>
+          <p class="text-xs text-gray-500 mt-1">Gesamt</p>
+        </div>
+        <div class="bg-chaosPanel border border-gray-800 rounded-xl p-6 hover:shadow-glow transition corner-brackets">
+          <p class="text-xs text-gray-500">Bot Status</p>
+          <div class="flex items-center gap-2 mt-2">
+            <span class="w-3 h-3 rounded-full bg-green-400" id="botDot"></span>
+            <span class="text-xl text-green-400 font-bold" id="botStatusMain">ONLINE</span>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Latency: <span id="latency">—</span>ms</p>
+        </div>
+        <div class="bg-chaosPanel border border-gray-800 rounded-xl p-6 hover:shadow-glow transition corner-brackets">
+          <p class="text-xs text-gray-500">Deine Rolle</p>
+          <h3 class="text-2xl font-bold text-yellow-400 mt-2" id="myRole">—</h3>
+          <p class="text-xs text-gray-500 mt-1">Zugriffslevel</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: Mod Actions -->
+    <section id="sec-modactions" class="hidden space-y-6">
+      <div class="bg-chaosPanel border border-gray-800 rounded-2xl p-6 corner-brackets">
+        <h4 class="text-white text-lg font-semibold mb-1">Mod Actions</h4>
+        <p class="text-xs text-gray-500 mb-6">Target user + action + reason.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs text-gray-500">Target User</label>
+            <select id="targetUser" class="mt-2 w-full bg-black/50 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-chaosRed/60"></select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">Timeout (Minuten)</label>
+            <input id="timeoutMinutes" type="number" min="1" placeholder="z.B. 10"
+              class="mt-2 w-full bg-black/50 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-chaosRed/60" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-xs text-gray-500">Reason</label>
+            <input id="reason" type="text" placeholder="Kurzer klarer Grund"
+              class="mt-2 w-full bg-black/50 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-chaosRed/60" />
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-2 md:grid-cols-3 gap-3">
+          <button data-action="WARN" class="px-4 py-2 rounded-xl border border-chaosRed text-chaosRed hover:bg-chaosRed hover:text-white hover:shadow-glow transition">Warn</button>
+          <button data-action="TIMEOUT" class="px-4 py-2 rounded-xl border border-gray-700 text-gray-200 hover:border-chaosRed/60 transition">Timeout</button>
+          <button data-action="KICK" class="px-4 py-2 rounded-xl border border-gray-700 text-gray-200 hover:border-chaosRed/60 transition">Kick</button>
+        </div>
+
+        <p class="text-xs text-gray-600 mt-3">⚠️ Ban ist nur für Admins verfügbar.</p>
+
+        <div class="mt-4 flex items-center justify-between text-xs">
+          <span class="text-gray-500">POST /api/mod/action</span>
+          <span id="actionState" class="text-gray-400">idle</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: Users -->
+    <section id="sec-users" class="hidden">
+      <div class="bg-chaosPanel border border-gray-800 rounded-xl p-6 corner-brackets">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-white">Server Members</h3>
+          <div class="text-xs text-gray-500">status • role</div>
+        </div>
+        <div id="userList" class="space-y-3 text-sm"></div>
+      </div>
+    </section>
+
+    <!-- SECTION: Logs -->
+    <section id="sec-logs" class="hidden">
+      <div class="bg-chaosPanel border border-gray-800 rounded-xl p-6 corner-brackets">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-white">Moderation Logs</h3>
+          <span class="w-2 h-2 rounded-full bg-chaosRed hud-pulse"></span>
+        </div>
+        <div id="logBox" class="h-96 overflow-y-auto text-sm space-y-2"></div>
+      </div>
+    </section>
+
+  </main>
+
+<script>
+const API_BASE = "";
+
+function showSection(name) {
+  document.querySelectorAll("section[id^='sec-']").forEach(s => s.classList.add("hidden"));
+  document.getElementById("sec-" + name).classList.remove("hidden");
+  const titles = {
+    dashboard: "Dashboard",
+    modactions: "Mod Actions",
+    users: "Users",
+    logs: "Logs"
+  };
+  document.getElementById("sectionTitle").textContent = titles[name] || name;
+  document.querySelectorAll(".nav-btn").forEach(b => {
+    b.classList.remove("border-chaosRed/60", "shadow-glowSoft");
+    b.classList.add("border-gray-800");
+  });
+  event.currentTarget.classList.add("border-chaosRed/60", "shadow-glowSoft");
+  event.currentTarget.classList.remove("border-gray-800");
+}
+
+async function loadUserInfo() {
+  try {
+    const res = await fetch(API_BASE + "/api/me", { credentials: "include" });
+    if (res.status === 401) { window.location.href = "/web/login.html"; return null; }
+    const user = await res.json();
+    document.getElementById("userName").textContent = user.name;
+    document.getElementById("userRoleBadge").textContent = user.role.toUpperCase();
+    document.getElementById("myRole").textContent = user.role.toUpperCase();
+    if (user.avatar) {
+      const av = document.getElementById("userAvatar");
+      av.src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+      av.classList.remove("hidden");
+    }
+    return user;
+  } catch (e) {
+    window.location.href = "/web/login.html";
+    return null;
+  }
+}
+
+async function loadDashboard() {
+  try {
+    const res = await fetch(API_BASE + "/api/dashboard", { credentials: "include" });
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById("serverName").textContent = data.server?.name ?? "—";
+    document.getElementById("serverUsers").textContent = data.server?.users ?? "—";
+    document.getElementById("memberCount").textContent = data.server?.users ?? "—";
+    document.getElementById("latency").textContent = data.stats?.bot?.latency ?? "—";
+    const status = data.stats?.bot?.status ?? "OFFLINE";
+    document.getElementById("botStatus").textContent = status;
+    document.getElementById("botStatusMain").textContent = status;
+    document.getElementById("botDot").className = `w-3 h-3 rounded-full ${status === "ONLINE" ? "bg-green-400" : "bg-chaosRed"}`;
+    document.getElementById("botStatusMain").className = `text-xl font-bold ${status === "ONLINE" ? "text-green-400" : "text-chaosRed"}`;
+  } catch (e) { console.error(e); }
+}
+
+async function loadUsers() {
+  try {
+    const res = await fetch(API_BASE + "/api/users", { credentials: "include" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = document.getElementById("userList");
+    const sel = document.getElementById("targetUser");
+    list.innerHTML = "";
+    sel.innerHTML = "";
+    (data.users || []).forEach(u => {
+      list.innerHTML += `
+        <div class="bg-[#0b0b0b] border border-gray-800 rounded-xl px-4 py-3 hover:shadow-glowSoft hover:border-chaosRed/40 transition">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-2.5 h-2.5 rounded-full ${u.status === 'online' ? 'bg-green-400' : 'bg-gray-600'}"></span>
+              <div>
+                <div class="text-white">${u.name}</div>
+                <div class="text-xs text-gray-500">${u.role}</div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      const opt = document.createElement("option");
+      opt.value = u.id;
+      opt.textContent = `${u.name} (${u.role})`;
+      sel.appendChild(opt);
+    });
+  } catch (e) { console.error(e); }
+}
+
+async function loadLogs() {
+  try {
+    const res = await fetch(API_BASE + "/api/logs", { credentials: "include" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const logBox = document.getElementById("logBox");
+    logBox.innerHTML = "";
+    (data.logs || []).forEach(line => {
+      const el = document.createElement("div");
+      el.className = "log-item bg-[#0b0b0b] border border-gray-800 rounded-xl px-4 py-2 text-gray-300 hover:shadow-glowSoft transition";
+      el.textContent = line;
+      logBox.appendChild(el);
+    });
+  } catch (e) { console.error(e); }
+}
+
+document.querySelectorAll("[data-action]").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const action = btn.getAttribute("data-action");
+    const target_id = document.getElementById("targetUser").value;
+    const reason = document.getElementById("reason").value || "No reason provided";
+    const timeout_minutes = Number(document.getElementById("timeoutMinutes").value || 0);
+    const state = document.getElementById("actionState");
+    if (action === "TIMEOUT" && timeout_minutes <= 0) {
+      state.className = "text-yellow-300";
+      state.textContent = "Timeout braucht Minuten > 0";
+      return;
+    }
+    try {
+      state.className = "text-gray-300";
+      state.textContent = "sending…";
+      const res = await fetch(API_BASE + "/api/mod/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, target_id, reason, timeout_minutes }),
+        credentials: "include"
+      });
+      const data = await res.json();
+      state.className = "text-green-400";
+      state.textContent = data.message || "ok";
+    } catch (e) {
+      state.className = "text-gray-400";
+      state.textContent = "Fehler";
+    }
+  });
+});
+
+document.getElementById("btnLogout").addEventListener("click", async () => {
+  await fetch(API_BASE + "/logout", { method: "POST", credentials: "include" });
+  window.location.href = "/web/login.html";
+});
+
+(async () => {
+  const user = await loadUserInfo();
+  if (!user) return;
+  await loadDashboard();
+  await loadUsers();
+  await loadLogs();
+})();
+</script>
+</body>
+</html>

@@ -170,5 +170,40 @@ def create_api(bot):
     @app.post("/api/mod/action", dependencies=[Depends(require_role("mod"))])
     async def mod_action(data: dict):
         return {"ok": True, "message": "action received"}
+# Echte Logs aus bot.log lesen
+    @app.get("/api/logs", dependencies=[Depends(require_auth)])
+    async def logs():
+        log_path = "/app/logs/bot.log"
+        try:
+            with open(log_path, "r") as f:
+                lines = f.readlines()
+            # Letzte 50 Zeilen, neueste zuerst
+            recent = list(reversed(lines[-50:]))
+            return {"logs": [line.strip() for line in recent if line.strip()]}
+        except Exception as e:
+            return {"logs": [f"Log-Datei nicht gefunden: {str(e)}"]}
 
+    # Echte User vom Discord Server laden
+    @app.get("/api/users", dependencies=[Depends(require_role("mod"))])
+    async def users():
+        try:
+            guild = bot.guilds[0] if bot.guilds else None
+            if not guild:
+                return {"users": []}
+
+            result = []
+            for member in guild.members:
+                # Bots überspringen
+                if member.bot:
+                    continue
+                result.append({
+                    "id": str(member.id),
+                    "name": member.display_name,
+                    "status": str(member.status),
+                    "role": member.top_role.name if member.top_role else "Member",
+                    "badges": []
+                })
+            return {"users": result}
+        except Exception as e:
+            return {"users": [], "error": str(e)}
     return app

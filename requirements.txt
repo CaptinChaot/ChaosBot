@@ -6,5 +6,5 @@ fastapi
 uvicorn[standard]
 python-multipart
 itsdangerous
-
+httpx
 

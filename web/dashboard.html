@@ -148,16 +148,29 @@
         <p class="text-xs text-gray-500">Realtime moderation + system telemetry</p>
       </div>
 
-      <div class="flex items-center gap-3">
-        <button id="btnOpenMod"
-          class="px-5 py-2 rounded-xl border border-chaosRed text-chaosRed hover:bg-chaosRed hover:text-white hover:shadow-glow transition">
-          Mod Actions
-        </button>
-        <button id="btnSync"
-          class="px-5 py-2 rounded-xl border border-gray-700 text-gray-200 hover:border-chaosRed/60 hover:shadow-glowSoft transition">
-          Force Sync
-        </button>
+    <div class="flex items-center gap-3">
+      <!-- User Info -->
+      <div id="userInfo" class="flex items-center gap-3 bg-chaosPanel border border-gray-800 rounded-xl px-4 py-2 text-xs">
+        <img id="userAvatar" src="" alt="Avatar" class="w-7 h-7 rounded-full border border-gray-700 hidden" />
+        <div>
+          <div class="text-white" id="userName">—</div>
+          <div class="text-gray-500" id="userRole">—</div>
+        </div>
       </div>
+
+      <button id="btnOpenMod"
+        class="px-5 py-2 rounded-xl border border-chaosRed text-chaosRed hover:bg-chaosRed hover:text-white hover:shadow-glow transition">
+        Mod Actions
+      </button>
+      <button id="btnSync"
+        class="px-5 py-2 rounded-xl border border-gray-700 text-gray-200 hover:border-chaosRed/60 hover:shadow-glowSoft transition">
+        Force Sync
+      </button>
+      <button id="btnLogout"
+        class="px-5 py-2 rounded-xl border border-gray-700 text-gray-400 hover:border-chaosRed/60 hover:text-white transition">
+        Logout
+      </button>
+    </div>
     </header>
 
     <!-- Top cards -->
@@ -313,7 +326,7 @@
 /* ===========================
    API-ready config
    =========================== */
-const API_BASE = "http://116.203.61.87:8000"; // z.B. "http://127.0.0.1:8000" wenn dein Python-Server läuft
+const API_BASE = ""; // z.B. "http://127.0.0.1:8000" wenn dein Python-Server läuft
 
 async function apiGet(path) {
   const url = `${API_BASE}${path}`;
@@ -335,7 +348,34 @@ async function apiPost(path, body) {
   if (!res.ok) throw res;
   return await res.json();
 }
+// User-Info laden und anzeigen
+async function loadUserInfo() {
+  try {
+    const res = await fetch(API_BASE + "/api/me", { credentials: "include" });
+    if (res.status === 401) {
+      window.location.href = "/login.html";
+      return;
+    }
+    const user = await res.json();
+    document.getElementById("userName").textContent = user.name;
+    document.getElementById("userRole").textContent = user.role.toUpperCase();
 
+    // Avatar anzeigen wenn vorhanden
+    if (user.avatar) {
+      const avatar = document.getElementById("userAvatar");
+      avatar.src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+      avatar.classList.remove("hidden");
+    }
+  } catch (e) {
+    window.location.href = "/login.html";
+  }
+}
+
+// Logout Button
+document.getElementById("btnLogout").addEventListener("click", async () => {
+  await fetch(API_BASE + "/api/logout", { method: "POST", credentials: "include" });
+  window.location.href = "/login.html";
+});
 
 /* ===========================
    Fallback Fake data
@@ -483,22 +523,9 @@ async function ensureAuth() {
   const res = await fetch(API_BASE + "/api/dashboard", {
     credentials: "include"
   });
-
   if (res.status === 401) {
-    const passphrase = prompt("Admin Passphrase:");
-    if (!passphrase) return false;
-
-    const login = await fetch(API_BASE + "/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ passphrase }),
-      credentials: "include"
-    });
-
-    if (!login.ok) {
-      alert("Login fehlgeschlagen");
-      return false;
-    }
+    window.location.href = "/login.html";
+    return false;
   }
   return true;
 }
@@ -588,6 +615,7 @@ document.getElementById("btnSync").addEventListener("click", loadDashboard);
 /* Boot */
 /* Boot */
 (async () => {
+  await loadUserInfo();
   const ok = await ensureAuth();
   if (!ok) return;
 

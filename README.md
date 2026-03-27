@@ -256,7 +256,7 @@ ChaosBot is a full-featured Discord bot built with **discord.py**, offering a wi
 | 🛡️ **Role Management** | Automatic role management and synchronization |
 | 📋 **Moderation Commands** | Full moderation commands (Warn/Kick/Ban/Timeout etc.) |
 | 🔒 **Permission System** | Level-based permission system (Member to Owner) |
-| 🔒 **Birthday-Reminder** | Birthday-Reminder - saves Days in the dB |
+| 🎂 **Birthday-Reminder** | Birthday-Reminder - saves Days in the dB |
 
 
 ---

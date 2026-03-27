@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChaosBot • Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            chaosRed: '#ff1a1a',
+            chaosDark: '#050505',
+          },
+          boxShadow: {
+            glow: '0 0 26px rgba(255, 26, 26, 0.62)',
+            glowSoft: '0 0 14px rgba(255, 26, 26, 0.42)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .hud-bg {
+      background:
+        radial-gradient(80% 60% at 20% 10%, rgba(255,26,26,0.16), transparent 55%),
+        radial-gradient(70% 60% at 80% 90%, rgba(255,26,26,0.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,26,26,0.06), transparent 22%, rgba(255,26,26,0.03));
+    }
+    .hud-grid::before {
+      content:"";
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 46px 46px;
+      opacity: .14;
+      pointer-events:none;
+      mask-image: radial-gradient(circle at 50% 20%, black 0%, black 40%, transparent 72%);
+    }
+    .hud-scanlines::after {
+      content:"";
+      position:absolute; inset:0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.05),
+        rgba(255,255,255,0.05) 1px,
+        transparent 1px,
+        transparent 6px
+      );
+      opacity: .08;
+      pointer-events:none;
+    }
+    .corner-brackets { position: relative; }
+    .corner-brackets::before,
+    .corner-brackets::after {
+      content:"";
+      position:absolute;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,26,26,0.55);
+      filter: drop-shadow(0 0 10px rgba(255,26,26,0.35));
+      pointer-events:none;
+    }
+    .corner-brackets::before { top:10px; left:10px; border-right:0; border-bottom:0; }
+    .corner-brackets::after  { bottom:10px; right:10px; border-left:0; border-top:0; }
+
+    @keyframes hudPulse { 0%,100%{ opacity:.55 } 50%{ opacity:.95 } }
+    .hud-pulse { animation: hudPulse 3.2s ease-in-out infinite; }
+  </style>
+</head>
+
+<body class="bg-black text-gray-200 font-mono min-h-screen flex items-center justify-center relative overflow-hidden">
+
+  <!-- HUD Background -->
+  <div class="absolute inset-0 hud-bg hud-grid hud-scanlines pointer-events-none"></div>
+
+  <!-- Login Card -->
+  <div class="relative z-10 w-full max-w-sm px-4">
+    <div class="bg-[#090909] border border-gray-800 rounded-2xl p-8 corner-brackets">
+
+      <!-- Logo + Title -->
+      <div class="flex flex-col items-center gap-4 mb-8">
+        <img src="/web/assets/CHAOSBOT_LOGO.png" alt="ChaosBot Logo"
+             class="w-16 h-16 rounded-xl border border-gray-800 shadow-glowSoft" />
+        <div class="text-center">
+          <h1 class="text-xl font-bold text-white tracking-wide">ChaosBot</h1>
+          <p class="text-xs text-gray-500 mt-1">Control Center • V3</p>
+        </div>
+      </div>
+
+      <!-- Login Button -->
+      <a href="/login"
+         class="flex items-center justify-center gap-3 w-full px-6 py-3 rounded-xl
+                bg-[#5865F2] hover:bg-[#4752c4] text-white font-semibold
+                transition hover:shadow-glow">
+        <!-- Discord Logo SVG -->
+        <svg width="22" height="22" viewBox="0 0 127.14 96.36" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+        </svg>
+        Mit Discord einloggen
+      </a>
+
+      <!-- Info -->
+      <p class="text-xs text-gray-600 text-center mt-6">
+        Nur Mitglieder von CaptinChaot's Server haben Zugriff.
+      </p>
+
+      <!-- Status -->
+      <div class="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
+        <span class="w-2 h-2 rounded-full bg-chaosRed hud-pulse"></span>
+        <span>CC HUD mode</span>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

@@ -42,7 +42,7 @@ def create_api(bot):
     app.add_middleware(
         SessionMiddleware,
         secret_key=os.getenv("CHAOSBOT_SESSION_SECRET"),
-        https_only=False  # später True wenn HTTPS läuft
+        https_only=True  # später True wenn HTTPS läuft
     )
 
     # Statische Dateien — dein HTML/CSS/JS Dashboard

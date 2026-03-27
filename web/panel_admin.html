@@ -439,13 +439,18 @@ document.getElementById("btnSync").addEventListener("click", () => {
   if (!user) return;
   await loadDashboard();
   await loadUsers();
+  await loadLogs();
+})();
 
   // Fake log stream
-  const fakeLogs = ["WARN | User#1337 | Spam", "INFO | AutoMod | Triggered", "BAN | TrollGuy | Raid"];
-  setInterval(() => {
-    pushLogLine(fakeLogs[Math.floor(Math.random() * fakeLogs.length)]);
-  }, 3000);
-})();
+async function loadLogs() {
+  try {
+    const res = await fetch(API_BASE + "/api/logs", { credentials: "include" });
+    if (!res.ok) return;
+    const data = await res.json();
+    (data.logs || []).forEach(line => pushLogLine(line));
+  } catch (e) { console.error(e); }
+}
 </script>
 </body>
 </html>

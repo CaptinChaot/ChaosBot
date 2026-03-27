@@ -191,9 +191,11 @@ def create_api(bot):
             if not guild:
                 return {"users": []}
 
+        # Member Cache auffrischen
+            await guild.chunk()
+
             result = []
             for member in guild.members:
-                # Bots überspringen
                 if member.bot:
                     continue
                 result.append({

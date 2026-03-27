@@ -161,11 +161,6 @@ def create_api(bot):
             }
         }
 
-    # Users — nur ab Mod aufwärts
-    @app.get("/api/users", dependencies=[Depends(require_role("mod"))])
-    async def users():
-        return {"users": []}
-
     # Mod Actions — nur ab Mod aufwärts
     @app.post("/api/mod/action", dependencies=[Depends(require_role("mod"))])
     async def mod_action(data: dict):

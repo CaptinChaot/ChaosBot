@@ -184,6 +184,7 @@ def create_api(bot):
             return {"logs": [f"Log-Datei nicht gefunden: {str(e)}"]}
 
     # Echte User vom Discord Server laden
+   # Echte User vom Discord Server laden
     @app.get("/api/users", dependencies=[Depends(require_role("mod"))])
     async def users():
         try:
@@ -191,20 +192,12 @@ def create_api(bot):
             if not guild:
                 return {"users": [], "error": "Keine Guild gefunden"}
 
-            result = []
-            for member in guild.members:
-                if member.bot:
-                    continue
-                result.append({
-                    "id": str(member.id),
-                    "name": member.display_name,
-                    "status": str(member.status),
-                    "role": member.top_role.name if member.top_role else "Member",
-                    "badges": []
-                })
+            return {"users": [], "debug": {
+                "guild_name": guild.name,
+                "member_count": guild.member_count,
+                "cached_members": len(guild.members)
+            }}
 
-        # Debug: auch wenn leer
-            return {"users": result, "total": len(result), "guild": guild.name}
         except Exception as e:
             return {"users": [], "error": str(e)}
     return app

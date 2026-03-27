@@ -199,5 +199,5 @@ def create_api(bot):
             }}
 
         except Exception as e:
-            return {"users": [], "error": str(e)}
+            return {"users": [], "error": str(e), "type": str(type(e))}
     return app

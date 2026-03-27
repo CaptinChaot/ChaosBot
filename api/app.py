@@ -189,10 +189,7 @@ def create_api(bot):
         try:
             guild = bot.guilds[0] if bot.guilds else None
             if not guild:
-                return {"users": []}
-
-        # Member Cache auffrischen
-            await guild.chunk()
+                return {"users": [], "error": "Keine Guild gefunden"}
 
             result = []
             for member in guild.members:
@@ -205,7 +202,9 @@ def create_api(bot):
                     "role": member.top_role.name if member.top_role else "Member",
                     "badges": []
                 })
-            return {"users": result}
+
+        # Debug: auch wenn leer
+            return {"users": result, "total": len(result), "guild": guild.name}
         except Exception as e:
             return {"users": [], "error": str(e)}
     return app

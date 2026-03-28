@@ -53,7 +53,9 @@ if bot_env == "dev":
     config._data["twitch"]["announce_channel"] = 1460995866381779046 # Twitch Ankündigungen (für API)
     config._data["channels"]["rules_channel"] = 1460995866381779041 # Regeln Channel
 
-
+    # Status Channels
+    config._data["channels"]["bot_status"] = 1487418133839872091
+    config._data["channels"]["dashboard_status"] = 1487418186314940428
 
     # Tickets
     config._data.setdefault("tickets", {})
@@ -88,6 +90,8 @@ if bot_env == "dev":
     config._data["features"]["welcome"]               = True
     config._data["features"]["rules_reaction"]        = True
     config._data["features"]["automod"]              = True
+    config._data["features"]["birthday"]              = True
+    config._data["features"]["status_channels"]      = True
 
     #automod
     config._data.setdefault("automod", {})
@@ -149,6 +153,8 @@ class ChaosBot(commands.Bot):
             "rules_reaction":   config.features.get("rules_reaction", False), # ← Rules Reaction nur laden, wenn aktiviert
             "auto_handler":     config.features.get("automod", False), # ← AutoMod nur laden, wenn aktiviert
             "birthday":         config.features.get("birthday", False), # ← Birthday nur laden, wenn aktiviert
+            "status_channels":  config.features.get("status_channels", False), # ← Status Channels nur laden, wenn aktiviert
+
         }
 
         loaded_cogs = []

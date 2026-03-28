@@ -79,5 +79,13 @@ class Config:
     def birthday(self) -> dict:
         return self._data.get("birthday", {})
     
+    @property
+    def bot_status_vc(self) -> int | None:
+        return int(self.channels.get("bot_status", 0))
+
+    @property
+    def dashboard_status_vc(self) -> int | None:
+        return int(self.channels.get("dashboard_status", 0))
+
 # Singleton
 config = Config()

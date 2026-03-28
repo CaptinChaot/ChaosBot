@@ -36,6 +36,8 @@ channels:
  welcome_channel: 1058822264403017763
  member_count_vc: 1247579330784002130
  rules_channel: 1058822264860188672
+ bot_status: 1487417355566055595
+ dashboard_status: 1487417618318098512
 
 log_channels:
   bot: 1058822265631940712
@@ -156,4 +158,5 @@ features:
   rules_reaction: true            # Regeln-Reactions zum Akzeptieren der Regeln
   automod: true                 # AutoMod (Spam/Caps/Blacklist)
   birthday: true                # Geburtstags-Feature (Geburtstagsdatenbank, Geburtstagsgrüße, etc.)
+  status_channels: true         # Status-Channels (z.B. Bot-Status, Dashboard-Status, etc.)
   

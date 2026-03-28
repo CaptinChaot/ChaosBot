@@ -202,4 +202,39 @@ def create_api(bot):
 
         except Exception as e:
             return {"users": [], "error": str(e)}
+        
+        # Dev Bot Logs
+    @app.get("/api/dev/logs", dependencies=[Depends(require_role("dev"))])
+    async def dev_logs():
+        log_path = "/app/logs/bot.log"
+        try:
+            with open(log_path, "r") as f:
+                lines = f.readlines()
+            recent = list(reversed(lines[-100:]))
+            return {"logs": [line.strip() for line in recent if line.strip()]}
+        except Exception as e:
+            return {"logs": [f"Log-Datei nicht gefunden: {str(e)}"]}
+
+    # Dev Bot Control
+    @app.post("/api/dev/bot", dependencies=[Depends(require_role("dev"))])
+    async def dev_bot_control(data: dict):
+        action = data.get("action")
+        import subprocess
+        try:
+            if action == "restart":
+                subprocess.Popen(["docker", "compose", "restart", "discordbot-dev"],
+                    cwd="/app")
+                return {"ok": True, "message": "Dev Bot wird neugestartet..."}
+            elif action == "stop":
+                subprocess.Popen(["docker", "compose", "stop", "discordbot-dev"],
+                    cwd="/app")
+                return {"ok": True, "message": "Dev Bot wird gestoppt..."}
+            elif action == "start":
+                subprocess.Popen(["docker", "compose", "start", "discordbot-dev"],
+                    cwd="/app")
+                return {"ok": True, "message": "Dev Bot wird gestartet..."}
+            else:
+                return {"ok": False, "message": "Unbekannte Action"}
+        except Exception as e:
+            return {"ok": False, "message": str(e)}
     return app

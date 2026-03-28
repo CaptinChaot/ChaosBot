@@ -248,10 +248,17 @@ def create_api(bot):
                 if timeout_minutes <= 0:
                     return {"ok": False, "message": "Timeout braucht Minuten > 0"}
                 duration = timeout_minutes * 60
-                ok, error = await safe_timeout(target, duration, reason=reason)
-                if not ok:
-                    return {"ok": False, "message": error}
                 until = utcnow() + timedelta(seconds=duration)
+                loop = bot.loop
+                future = asyncio.run_coroutine_threadsafe(
+                    target.timeout(until, reason=reason),
+                    loop
+                )
+                try:
+                    future.result(timeout=10)
+                except Exception as e: 
+                    return {"ok": False, "message": f"Timeout Fehler: {str(e)}"}
+                    
                 save_timeout(guild.id, target.id, until, reason)
                 await send_log(
                     "⚠️ Timeout (Dashboard)",
@@ -262,9 +269,15 @@ def create_api(bot):
                 return {"ok": True, "message": f"✅ {target.name} für {timeout_minutes} Minuten in Timeout"}
 
             elif action == "KICK":
-                ok, error = await safe_kick(target, reason=reason)
-                if not ok:
-                    return {"ok": False, "message": error}
+                loop =  bot.loop
+                future = asyncio.run_coroutine_threadsafe(
+                    target.kick(reason=reason),
+                    loop
+                )
+                try:
+                    future.result(timeout=10)
+                except Exception as e:
+                    return {"ok": False, "message": f"Kick Fehler: {str(e)}"}    
                 await send_log(
                     "⚠️ KICK (Dashboard)",
                     f"**Moderator:** {moderator}\n**User:** {target.name}(ID: {target.id})\n**Grund:** {reason}",
@@ -274,9 +287,15 @@ def create_api(bot):
                 return {"ok": True, "message": f"✅ {target.name} gekickt"}
 
             elif action == "BAN":
-                ok, error = await safe_ban(guild, target, reason=reason)
-                if not ok:
-                    return {"ok": False, "message": error}
+                loop = bot.loop
+                future= asyncio.run_coroutine_threadsafe(
+                    guild.ban(target, reason=reason),
+                    loop
+                )
+                try:
+                    future.result(timeout=10)
+                except Exception as e:
+                    return {"ok": False, "message": f"Bann Fehler: {str|(e)}"    }    
                 save_ban(guild.id, target.id, reason)
                 await send_log(
                     "⚠️ BAN (Dashboard)",

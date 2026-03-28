@@ -184,7 +184,7 @@ def create_api(bot):
             return {"ok": False, "message": "User nicht gefunden"}
 
         try:
-            from utils.moderation_actions import safe_warn, safe_kick, safe_ban, safe_timeout
+            from utils.moderation_actions import safe_kick, safe_ban, safe_timeout
             from utils.warnings_db import add_warning, count_warnings, save_ban, save_timeout
             from utils.logger import log_to_channel
             from utils.config import config

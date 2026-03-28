@@ -127,6 +127,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.reactions = True
+intents.presences = True
 
 init_db()
 init_birthday_db()

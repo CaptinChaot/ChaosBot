@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
 from utils.auth import require_auth, require_role
+from utils.logger import logger
 
 load_dotenv()
 
@@ -163,8 +164,116 @@ def create_api(bot):
 
     # Mod Actions — nur ab Mod aufwärts
     @app.post("/api/mod/action", dependencies=[Depends(require_role("mod"))])
-    async def mod_action(data: dict):
-        return {"ok": True, "message": "action received"}
+    async def mod_action(data: dict, request: Request):
+        action = data.get("action")
+        target_id = int(data.get("target_id", 0))
+        reason = data.get("reason", "Keine Grund angegeben (Dashboard)")
+        timeout_minutes = int(data.get("timeout_minutes", 0))
+
+        guild = bot.guilds[0] if bot.guilds else None
+        if not guild:
+            return {"ok": False, "message": "Guild nicht gefunden"}
+
+        # Moderator aus Session holen
+        mod_user = request.session.get("user")
+        mod_id = int(mod_user.get("id", 0))
+        moderator = guild.get_member(mod_id)
+        target = guild.get_member(target_id)
+
+        if not target:
+            return {"ok": False, "message": "User nicht gefunden"}
+
+        try:
+            from utils.moderation_actions import safe_warn, safe_kick, safe_ban, safe_timeout
+            from utils.warnings_db import add_warning, count_warnings, save_ban, save_timeout
+            from utils.logger import log_to_channel
+            from utils.config import config
+            from datetime import timedelta
+            from discord.utils import utcnow
+            import discord
+
+            channel_id = int(config.log_channels.get("moderation", 0))
+
+            if action == "WARN":
+                warning_id = add_warning(
+                    guild_id=guild.id,
+                    user_id=target.id,
+                    moderator_id=mod_id,
+                    reason=reason
+                )
+                total = count_warnings(guild_id=guild.id, user_id=target.id)
+
+                if channel_id:
+                    await log_to_channel(
+                        bot, channel_id,
+                        "⚠️ Verwarnung (Dashboard)",
+                        f"**Moderator:** {moderator} (Dashboard)\n"
+                        f"**User:** {target.mention} (ID: {target.id})\n"
+                        f"**Verwarnungen gesamt:** {total}\n"
+                        f"**Grund:** {reason}",
+                        discord.Color.orange()
+                    )
+                return {"ok": True, "message": f"✅ {target.name} verwarnt ({total} Verwarnungen gesamt)"}
+
+            elif action == "TIMEOUT":
+                if timeout_minutes <= 0:
+                    return {"ok": False, "message": "Timeout braucht Minuten > 0"}
+                duration = timeout_minutes * 60
+                ok, error = await safe_timeout(target, duration, reason=reason)
+                if not ok:
+                    return {"ok": False, "message": error}
+                until = utcnow() + timedelta(seconds=duration)
+                save_timeout(guild.id, target.id, until, reason)
+                if channel_id:
+                    await log_to_channel(
+                        bot, channel_id,
+                        "⏱️ Timeout (Dashboard)",
+                        f"**Moderator:** {moderator} (Dashboard)\n"
+                        f"**User:** {target.mention}\n"
+                        f"**Dauer:** {timeout_minutes} Minuten\n"
+                        f"**Grund:** {reason}",
+                        discord.Color.gold()
+                    )
+                return {"ok": True, "message": f"✅ {target.name} für {timeout_minutes} Minuten in Timeout"}
+
+            elif action == "KICK":
+                ok, error = await safe_kick(target, reason=reason)
+                if not ok:
+                    return {"ok": False, "message": error}
+                if channel_id:
+                    await log_to_channel(
+                        bot, channel_id,
+                        "👢 Kick (Dashboard)",
+                        f"**Moderator:** {moderator} (Dashboard)\n"
+                        f"**User:** {target.name} (ID: {target.id})\n"
+                        f"**Grund:** {reason}",
+                        discord.Color.orange()
+                    )
+                return {"ok": True, "message": f"✅ {target.name} gekickt"}
+
+            elif action == "BAN":
+                ok, error = await safe_ban(guild, target, reason=reason)
+                if not ok:
+                    return {"ok": False, "message": error}
+                save_ban(guild.id, target.id, reason)
+                if channel_id:
+                    await log_to_channel(
+                        bot, channel_id,
+                        "🔨 Ban (Dashboard)",
+                        f"**Moderator:** {moderator} (Dashboard)\n"
+                     f"**User:** {target.name} (ID: {target.id})\n"
+                        f"**Grund:** {reason}",
+                        discord.Color.dark_red()
+                    )
+                return {"ok": True, "message": f"✅ {target.name} gebannt"}
+
+            else:
+                return {"ok": False, "message": "Unbekannte Action"}
+
+        except Exception as e:
+            logger.error(f"Mod Action Fehler: {e}")
+            return {"ok": False, "message": str(e)}
+    
 # Echte Logs aus bot.log lesen
     @app.get("/api/logs", dependencies=[Depends(require_auth)])
     async def logs():
@@ -178,7 +287,6 @@ def create_api(bot):
         except Exception as e:
             return {"logs": [f"Log-Datei nicht gefunden: {str(e)}"]}
 
-    # Echte User vom Discord Server laden
    # Echte User vom Discord Server laden
     @app.get("/api/users", dependencies=[Depends(require_role("mod"))])
     async def users():
@@ -237,4 +345,31 @@ def create_api(bot):
                 return {"ok": False, "message": "Unbekannte Action"}
         except Exception as e:
             return {"ok": False, "message": str(e)}
+        
+    @app.get("/api/stats", dependencies=[Depends(require_auth)])
+    async def stats():
+        try:
+            from utils.warnings_db import count_warnings
+            import discord
+
+            guild = bot.guilds[0] if bot.guilds else None
+            if not guild:
+                return {"warns": 0, "activeUsers": 0}
+
+            # Alle Warns zählen
+            total_warns = 0
+            for member in guild.members:
+                if not member.bot:
+                    total_warns += count_warnings(guild_id=guild.id, user_id=member.id)
+
+            # Online User zählen
+            active_users = sum(
+                1 for member in guild.members
+                if not member.bot and member.status != discord.Status.offline
+            )
+
+            return {"warns": total_warns, "activeUsers": active_users}
+
+        except Exception as e:
+            return {"warns": 0, "activeUsers": 0, "error": str(e)}
     return app

@@ -119,7 +119,7 @@
         ⚙️ Settings
       </button>
       <!-- Nur für dev/owner sichtbar -->
-      <button id="devBotBtn" onclick="showSection('devbot')" class="nav-btn hidden px-3 py-2 rounded-lg bg-purple-900/30 border border-purple-700/60 hover:shadow-glowSoft transition text-left text-purple-300">
+      <button id="devBotBtn" onclick=""window.location.href='/web/panel_dev.html'" class="nav-btn hidden px-3 py-2 rounded-lg bg-purple-900/30 border border-purple-700/60 hover:shadow-glowSoft transition text-left text-purple-300">
         🛠️ Dev Bot
       </button>
     </nav>
@@ -327,7 +327,14 @@ async function loadDashboard() {
     const res = await fetch(API_BASE + "/api/dashboard", { credentials: "include" });
     if (!res.ok) throw res;
     const data = await res.json();
-
+// Echte Stats laden
+    const statsRes = await fetch(API_BASE + "/api/stats", { credentials: "include" });
+    if (statsRes.ok) {
+      const stats = await statsRes.json();
+      document.getElementById("warnCount").textContent = stats.warns ?? "—";
+      document.getElementById("activeUsers").textContent = stats.activeUsers ?? "—";
+    }
+    
     document.getElementById("serverName").textContent = data.server?.name ?? "—";
     document.getElementById("serverUsers").textContent = data.server?.users ?? "—";
     document.getElementById("warnCount").textContent = data.stats?.warns ?? "—";

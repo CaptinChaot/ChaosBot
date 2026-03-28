@@ -337,7 +337,6 @@ async function loadDashboard() {
 
     document.getElementById("serverName").textContent = data.server?.name ?? "—";
     document.getElementById("serverUsers").textContent = data.server?.users ?? "—";
-    document.getElementById("warnCount").textContent = data.stats?.warns ?? "—";
     document.getElementById("latency").textContent = data.stats?.bot?.latency ?? "—";
 
     const status = data.stats?.bot?.status ?? "OFFLINE";

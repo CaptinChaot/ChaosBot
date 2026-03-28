@@ -1,5 +1,6 @@
 import os
 import httpx
+import asyncio
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
@@ -7,6 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
 from utils.auth import require_auth, require_role
 from utils.logger import logger
+
 
 load_dotenv()
 
@@ -207,6 +209,16 @@ def create_api(bot):
 
         if not target:
             return {"ok": False, "message": "User nicht gefunden"}
+        
+        async def send_log(title, description, color):
+            try:
+                from utils.logger import log_to_channel
+                import discord
+                channel_id = int(config.log_channels.get("moderation", 0))
+                if channel_id:
+                    await log_to_channel(bot, channel_id, title, description, color)
+            except Exception as e:
+                logger.warning(f"Log Fehler: {e}")
 
         try:
             from utils.moderation_actions import safe_kick, safe_ban, safe_timeout
@@ -224,6 +236,11 @@ def create_api(bot):
                     reason=reason
                 )
                 total = count_warnings(guild_id=guild.id, user_id=target.id)
+                await send_log(
+                    "⚠️ Verwarnung (Dashboard)",
+                    f"**Moderator:** {moderator}\n**User:** {target.mention}\n**Verwarnungen gesamt:** {total}\n**Grund:** {reason}",
+                    discord.Color.orange()
+                )
                 logger.info(f"WARN (Dashboard) | {moderator} -> {target} | {reason} | Total: {total}")
                 return {"ok": True, "message": f"✅ {target.name} verwarnt ({total} Verwarnungen gesamt)"}
 
@@ -236,6 +253,11 @@ def create_api(bot):
                     return {"ok": False, "message": error}
                 until = utcnow() + timedelta(seconds=duration)
                 save_timeout(guild.id, target.id, until, reason)
+                await send_log(
+                    "⚠️ Timeout (Dashboard)",
+                    f"**Moderator:** {moderator}\n**User:** {target.mention}\n**Dauert:** {timeout_minutes}min \n**Grund:** {reason}",
+                    discord.Color.orange()
+                )
                 logger.info(f"TIMEOUT (Dashboard) | {moderator} -> {target} | {timeout_minutes}min | {reason}")
                 return {"ok": True, "message": f"✅ {target.name} für {timeout_minutes} Minuten in Timeout"}
 
@@ -243,6 +265,11 @@ def create_api(bot):
                 ok, error = await safe_kick(target, reason=reason)
                 if not ok:
                     return {"ok": False, "message": error}
+                await send_log(
+                    "⚠️ KICK (Dashboard)",
+                    f"**Moderator:** {moderator}\n**User:** {target.name}(ID: {target.id})\n**Grund:** {reason}",
+                    discord.Color.orange()
+                )
                 logger.info(f"KICK (Dashboard) | {moderator} -> {target} | {reason}")
                 return {"ok": True, "message": f"✅ {target.name} gekickt"}
 
@@ -251,6 +278,11 @@ def create_api(bot):
                 if not ok:
                     return {"ok": False, "message": error}
                 save_ban(guild.id, target.id, reason)
+                await send_log(
+                    "⚠️ BAN (Dashboard)",
+                    f"**Moderator:** {moderator}\n**User:** {target.name} (ID: {target.id})\n**Grund:** {reason}",
+                    discord.Color.orange()
+                )
                 logger.info(f"BAN (Dashboard) | {moderator} -> {target} | {reason}")
                 return {"ok": True, "message": f"✅ {target.name} gebannt"}
 

@@ -24,14 +24,14 @@ class StatusChannels(commands.Cog):
             self.update_status_channels.cancel()
 
     async def check_dashboard(self) -> bool:
-        # Prüft ob das Dashboard erreichbar ist
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    "https://chaosbot.de",
-                    timeout=aiohttp.ClientTimeout(total=5)
+                    "https://chaosbot.de/login",
+                    timeout=aiohttp.ClientTimeout(total=5),
+                    allow_redirects=True
                 ) as res:
-                    return res.status == 200
+                    return res.status in [200, 307, 302]
         except Exception:
             return False
 

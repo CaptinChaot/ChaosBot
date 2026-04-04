@@ -295,7 +295,7 @@ def create_api(bot):
                 try:
                     future.result(timeout=10)
                 except Exception as e:
-                    return {"ok": False, "message": f"Bann Fehler: {str|(e)}"    }    
+                    return {"ok": False, "message": f"Bann Fehler: {str(e)}"}    
                 save_ban(guild.id, target.id, reason)
                 await send_log(
                     "⚠️ BAN (Dashboard)",
@@ -342,31 +342,4 @@ def create_api(bot):
         except Exception as e:
             return {"ok": False, "message": str(e)}
 
-        return app
-    @app.get("/api/stats", dependencies=[Depends(require_auth)])
-    async def stats():
-        try:
-            from utils.warnings_db import count_warnings
-            import discord
-
-            guild = bot.guilds[0] if bot.guilds else None
-            if not guild:
-                return {"warns": 0, "activeUsers": 0}
-
-            # Alle Warns zählen
-            total_warns = 0
-            for member in guild.members:
-                if not member.bot:
-                    total_warns += count_warnings(guild_id=guild.id, user_id=member.id)
-
-            # Online User zählen
-            active_users = sum(
-                1 for member in guild.members
-                if not member.bot and member.status != discord.Status.offline
-            )
-
-            return {"warns": total_warns, "activeUsers": active_users}
-
-        except Exception as e:
-            return {"warns": 0, "activeUsers": 0, "error": str(e)}
     return app

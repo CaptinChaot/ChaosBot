@@ -158,5 +158,6 @@ features:
   rules_reaction: true            # Regeln-Reactions zum Akzeptieren der Regeln
   automod: true                 # AutoMod (Spam/Caps/Blacklist)
   birthday: true                # Geburtstags-Feature (Geburtstagsdatenbank, Geburtstagsgrüße, etc.)
-  status_channels: true         # Status-Channels (z.B. Bot-Status, Dashboard-Status, etc.)
+  status_channels: true         # Status-Channels (z.B. Bot-Status, Dashboard-Status, etc.) 
+  giveaway: true                # Giveaway-Feature (Giveaways erstellen, verwalten, etc.)
   

@@ -34,6 +34,7 @@ ChaosBot ist ein vollständiger Discord-Bot gebaut mit **discord.py**, der eine 
 | 📋 **Moderation Commands** | Vollständige Moderationskommandos (Warn/Kick/Ban/Timeout etc.) |
 | 🔒 **Permission System** | Stufenbasiertes Berechtigungssystem (Member bis Owner) |
 | 🎂 **Geburtstags-Reminder** | Geburtstagsreminder, der die Tage in der dB. speichert |
+| 🎉 **Giveaway System** | Giveaways erstellen mit Button-Teilnahme, Timer und automatischer Gewinner-Auswahl |
 
 ---
 
@@ -217,6 +218,8 @@ features:
 | `/send_ticket_panel` | Ticket-Panel senden | DEV (30) |
 | `/set_birthday` | Geburtstag setzen | MEMBER |
 | `/birthday` | Geburtstag einsehen | MEMBER |
+| `/giveaway_start` | Giveaway starten | MOD (10) |
+| `/giveaway_end` | Giveaway manuell beenden | MOD (10) |
 
 ---
 
@@ -257,7 +260,7 @@ ChaosBot is a full-featured Discord bot built with **discord.py**, offering a wi
 | 📋 **Moderation Commands** | Full moderation commands (Warn/Kick/Ban/Timeout etc.) |
 | 🔒 **Permission System** | Level-based permission system (Member to Owner) |
 | 🎂 **Birthday-Reminder** | Birthday-Reminder - saves Days in the dB |
-
+| 🎉 **Giveaway System** | Create giveaways with button entry, timer and automatic winner selection |
 
 ---
 
@@ -349,7 +352,9 @@ See the German section above for a fully annotated `config.yaml` – all keys an
 | `/sync_user` | Sync DB with Discord | DEV (30) |
 | `/send_ticket_panel` | Send ticket panel | DEV (30) |
 | `/set_birthday` | Set your Birthday | MEMBER |
-| `/birthdayl` | Watch your Birthday | MEMBER |
+| `/birthday` | Watch your Birthday | MEMBER |
+| `/giveaway_start` | Start a giveaway | MOD (10) |
+| `/giveaway_end` | End a giveaway manually | MOD (10) |
 
 ---
 

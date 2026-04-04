@@ -13,6 +13,7 @@ from utils.config import config
 from discord import app_commands
 from utils.warnings_db import init_db
 from utils.birthday_db import init_birthday_db
+from utils.giveaway_db import init_giveaway_db
 
 
 # ──────────────────────────────────────────────
@@ -92,6 +93,7 @@ if bot_env == "dev":
     config._data["features"]["automod"]              = True
     config._data["features"]["birthday"]              = True
     config._data["features"]["status_channels"]      = True
+    config._data["features"]["giveaway"] = True
 
     #automod
     config._data.setdefault("automod", {})
@@ -106,6 +108,7 @@ if bot_env == "dev":
     config._data["birthday"]["enabled"] = True
     config._data["features"]["birthday"] = True
     config._data["birthday"]["channel_id"] = 1483841274120503365 # ← Birthday Channel
+  
 
     logger.info("Dev-Modus: Alle Features & Test-IDs aktiviert – Chaos erlaubt! 🚧")
 
@@ -131,6 +134,7 @@ intents.presences = True
 
 init_db()
 init_birthday_db()
+init_giveaway_db()
 class ChaosBot(commands.Bot):
     def __init__(self):
         super().__init__(
@@ -155,6 +159,7 @@ class ChaosBot(commands.Bot):
             "auto_handler":     config.features.get("automod", False), # ← AutoMod nur laden, wenn aktiviert
             "birthday":         config.features.get("birthday", False), # ← Birthday nur laden, wenn aktiviert
             "status_channels":  config.features.get("status_channels", False), # ← Status Channels nur laden, wenn aktiviert
+            "giveaway":         config.features.get("giveaway", False) # ← Giveaway nur laden, wenn aktiviert
 
         }
 

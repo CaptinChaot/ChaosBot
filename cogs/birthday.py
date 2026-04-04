@@ -73,7 +73,7 @@ class Birthday(commands.Cog):
             logger.warning(f"Birthday channel {self.channel_id} not found.")
             return
     
-        user_ids = get_todays_birthdays(channel.guild_id, now.day, now.month)
+        user_ids = get_todays_birthdays(channel.guild.id, now.day, now.month)
         for user_id in user_ids:
             member = channel.guild.get_member(user_id)
             if not member:

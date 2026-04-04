@@ -66,7 +66,7 @@ if bot_env == "dev":
 
     # Roles
     config._data.setdefault("roles", {})
-    config._data["roles"]["bot"] = 1461009559048032361
+    config._data["roles"]["bot"] = 1473645692013641783
     config._data["roles"]["owner"] = 1460995865731793089
     config._data["roles"]["co_owner"] = 1460995865731793088
     config._data["roles"]["admin"] = 1460995865731793086

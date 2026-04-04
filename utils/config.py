@@ -87,5 +87,9 @@ class Config:
     def dashboard_status_vc(self) -> int | None:
         return int(self.channels.get("dashboard_status", 0))
 
+    @property
+    def giveaway(self) -> dict:
+        giveaway = self._data.get("giveaway", {})
+        return giveaway if isinstance(giveaway, dict) else {}
 # Singleton
 config = Config()

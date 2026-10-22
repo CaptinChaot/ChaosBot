@@ -85,15 +85,15 @@ if bot_env == "dev":
     config._data["features"]["fun"]                   = True
     config._data["features"]["moderation"]            = True
     config._data["features"]["roles"]                 = True
-    config._data["features"]["tickets"]               = True   # ← zum Debuggen True
+    config._data["features"]["tickets"]               = True   
     config._data["features"]["twitch"]                = True
     config._data["features"]["member_count"]          = True
     config._data["features"]["welcome"]               = True
     config._data["features"]["rules_reaction"]        = True
-    config._data["features"]["automod"]              = True
+    config._data["features"]["automod"]               = True
     config._data["features"]["birthday"]              = True
-    config._data["features"]["status_channels"]      = True
-    config._data["features"]["giveaway"] = True
+    config._data["features"]["status_channels"]       = True
+    config._data["features"]["giveaway"]              = True
 
     #automod
     config._data.setdefault("automod", {})

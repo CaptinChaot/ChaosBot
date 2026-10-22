@@ -87,11 +87,7 @@ class Giveaway(commands.Cog):
     )
     async def giveaway_start(self, interaction: discord.Interaction, preis: str, gewinner: int, dauer: int = 0):
         await interaction.response.defer(ephemeral=True)
-        async def giveaway_start(self, interaction, preis, gewinner, dauer):
-            await interaction.response.defer(ephemeral=True)
-    
-            level = get_user_perm_level(interaction.user)
-            logger.info(f"[Giveaway DEBUG] {interaction.user} | Level: {level} | Rollen: {[r.id for r in interaction.user.roles]}")
+
         if get_user_perm_level(interaction.user) < PermLevel.MOD:
             await interaction.followup.send("❌ Du hast keine Berechtigung.", ephemeral=True)
             return

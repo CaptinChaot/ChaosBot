@@ -1,11 +1,22 @@
 import discord
-from datetime import datetime
-from discord import member
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
 from discord.ext import commands, tasks
 from discord import app_commands
 from utils.config import config
 from utils.logger import logger
 from utils.birthday_db import (save_birthday, get_birthday, get_todays_birthdays, delete_birthday)
+
+# Der Container läuft auf UTC – Geburtstage sollen aber um Mitternacht DEUTSCHER Zeit kommen
+BERLIN = ZoneInfo("Europe/Berlin")
+
+
+def safe_birthday_date(year: int, month: int, day: int) -> datetime:
+    """29.02. in Nicht-Schaltjahren → 01.03. (sonst crasht datetime)"""
+    try:
+        return datetime(year, month, day, tzinfo=BERLIN)
+    except ValueError:
+        return datetime(year, 3, 1, tzinfo=BERLIN)
 
 
 class Birthday(commands.Cog):
@@ -36,7 +47,8 @@ class Birthday(commands.Cog):
         save_birthday(interaction.guild_id, interaction.user.id, tag, monat, jahr)
         await interaction.followup.send(f"Dein Geburtstag wurde gespeichert: **{tag:02d}.{monat:02d}.{jahr}**",
                                         ephemeral=True)
-        logger.info(f"[Birthday] {interaction.user}  →  {tag:02d}.{monat:02d}.{jahr}")
+        # Kein komplettes Geburtsdatum mehr ins Log – das landet sonst im Dashboard
+        logger.info(f"[Birthday] {interaction.user} hat seinen Geburtstag eingetragen")
 
     @app_commands.command(name="birthday", description="Zeigt deinen Geburtstag an")
     async def birthday(self, interaction: discord.Interaction):
@@ -47,11 +59,11 @@ class Birthday(commands.Cog):
             await interaction.followup.send("Du hast deinen Geburtstag noch nicht eingetragen. Nutze /set_birthday, um deinen Geburtstag einzutragen.", ephemeral=True)
             return        
         
-        today =datetime.now()
+        today = datetime.now(BERLIN)
         age = today.year - bd['year'] - ((today.month, today.day) < (bd['month'], bd['day']))
-        next_bd = datetime(today.year, bd['month'], bd['day'])
+        next_bd = safe_birthday_date(today.year, bd['month'], bd['day'])
         if next_bd.date() < today.date():
-            next_bd = datetime(year=today.year + 1, month=bd['month'], day=bd['day'])
+            next_bd = safe_birthday_date(today.year + 1, bd['month'], bd['day'])
 
         await interaction.followup.send(
             f"🎂 **{bd['day']:02d}.{bd['month']:02d}.{bd['year']}**\n"
@@ -60,11 +72,11 @@ class Birthday(commands.Cog):
             ephemeral=True
         )
 
-    @tasks.loop(hours=24)
+    # Läuft jeden Tag GENAU um 00:00 deutscher Zeit
+    # (vorher: alle 24h ab Bot-Start + "ist es 0 Uhr?"-Check → hat praktisch nie gepasst)
+    @tasks.loop(time=time(hour=0, minute=0, tzinfo=BERLIN))
     async def check_birthdays(self):
-        now = datetime.now()
-        if now.hour != 0:
-            return
+        now = datetime.now(BERLIN)
         if not self.channel_id:
             return
     

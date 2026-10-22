@@ -33,8 +33,9 @@ async def log_to_channel(
     bot: discord.Client,
     channel_id: int,
     title: str,
-    description: str,
+    description: str = "",
     color: discord.Color = discord.Color.blurple(),
+    embed: discord.Embed | None = None,
 ):
     if not channel_id or channel_id == 0:
         logger.warning("Log-Channel-ID ist 0/leer (config.yaml). Kein Embed gesendet.")
@@ -50,7 +51,9 @@ async def log_to_channel(
             logger.warning(f"Log-Channel {channel_id} nicht abrufbar: {type(e).__name__}: {e}")
             return
 
-    embed = discord.Embed(title=title, description=description, color=color)
+    # Wenn schon ein fertiges Embed übergeben wurde (z.B. von /warn), das nehmen
+    if embed is None:
+        embed = discord.Embed(title=title, description=description, color=color)
     embed.set_footer(text="ChaosBot Logger")
 
     try:

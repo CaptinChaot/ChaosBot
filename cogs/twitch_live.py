@@ -1,3 +1,4 @@
+import os
 import discord
 import aiohttp
 from discord.ext import commands, tasks
@@ -10,18 +11,28 @@ class TwitchLive(commands.Cog):
         self.bot = bot
         self.access_token = None
         self.was_live = False
+        self._first_check = True  # beim ersten Check nur Status merken, nicht ankündigen
+
+        # Secrets kommen jetzt aus der .env (nicht mehr aus config.yaml → die liegt auf GitHub!)
+        self.client_id = os.getenv("TWITCH_CLIENT_ID")
+        self.client_secret = os.getenv("TWITCH_CLIENT_SECRET")
+        if not self.client_id or not self.client_secret:
+            logger.error("Twitch: TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET fehlen in der .env – Live-Check AUS.")
+            return
+
         self.check_stream.start()
 
     def cog_unload(self):
-        self.check_stream.cancel()
+        if self.check_stream.is_running():
+            self.check_stream.cancel()
 
     async def get_access_token(self):
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "https://id.twitch.tv/oauth2/token",
                 params={
-                    "client_id": config.twitch["client_id"],
-                    "client_secret": config.twitch["client_secret"],
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
                     "grant_type": "client_credentials"
                 }
             ) as resp:
@@ -34,7 +45,7 @@ class TwitchLive(commands.Cog):
             await self.get_access_token()
 
         headers = {
-            "Client-ID": config.twitch["client_id"],
+            "Client-ID": self.client_id,
             "Authorization": f"Bearer {self.access_token}"
         }
 
@@ -71,6 +82,13 @@ class TwitchLive(commands.Cog):
             streams, users = await self.fetch_stream_data()
 
             is_live = len(streams) > 0
+
+            # Nach einem Bot-Neustart: aktuellen Status nur merken.
+            # Sonst kommt mitten im Stream nochmal "Ich bin LIVE!" inkl. Rollen-Ping.
+            if self._first_check:
+                self._first_check = False
+                self.was_live = is_live
+                return
 
             if is_live and not self.was_live:
                 self.was_live = True

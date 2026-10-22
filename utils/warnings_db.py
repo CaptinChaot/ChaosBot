@@ -219,7 +219,6 @@ def clear_timeout(guild_id: int, user_id: int):
         )
 
 def save_ban(guild_id: int, user_id: int, reason: str | None = None):
-    print(">>>SAVE_BAN_CALLED<<<", guild_id, user_id, reason)
     with get_connection() as conn:
         conn.execute(
             """

@@ -1,111 +1,217 @@
 import os
-import httpx
 import asyncio
+import secrets
+from urllib.parse import urlencode
+
+import httpx
+import discord
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
-from dotenv import load_dotenv
-from utils.auth import require_auth, require_role
-from utils.logger import logger
 
+from utils.auth import role_at_least
+from utils.config import config
+from utils.logger import logger, log_to_channel, LOG_FILE
+from utils.permissions import get_user_perm_level, has_permission, PermLevel
 
-load_dotenv()
+# KEIN load_dotenv() mehr hier: main.py lädt schon die richtige Datei (.env ODER .env.dev).
+# Vorher hat diese Datei zusätzlich immer die Prod-.env geladen – auch im Dev-Container.
 
-DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
-DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
-DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI")
-DISCORD_GUILD_ID = os.getenv("DISCORD_GUILD_ID")
-
-ROLE_MAP = {
-    "1058822264046485536": "owner",
-    "1482303493757993091": "dev",
-    "1058822264046485535": "admin",
-    "1058822264046485534": "mod",
-    "1117188071406964787": "support",
-}
+# Reihenfolge = Priorität: die höchste Rolle zuerst.
+# (config-Key, Dashboard-Rolle) – die IDs kommen aus config.yaml, damit Dev-Overrides greifen.
+ROLE_ORDER = [
+    ("owner", "owner"),
+    ("co_owner", "co_owner"),
+    ("dev", "dev"),
+    ("admin", "admin"),
+    ("moderator", "mod"),
+    ("supporter", "support"),
+]
 
 ROLE_REDIRECT = {
-    "owner":   "/web/panel_admin.html",
-    "dev":     "/web/panel_dev.html",
-    "admin":   "/web/panel_admin.html",
-    "mod":     "/web/panel_mod.html",
-    "support": "/web/panel_mod.html",
-    "user":    "/web/dashboard.html",
+    "owner":    "/web/panel_admin.html",
+    "co_owner": "/web/panel_admin.html",
+    "dev":      "/web/panel_dev.html",
+    "admin":    "/web/panel_admin.html",
+    "mod":      "/web/panel_mod.html",
+    "support":  "/web/panel_mod.html",
+    "user":     "/web/dashboard.html",
 }
 
+# Dashboard-Action → Key in config.yaml → permissions (gleiche Regeln wie die Slash-Commands)
+ACTION_PERMISSION = {
+    "WARN": "warn",
+    "TIMEOUT": "timeout",
+    "KICK": "kick",
+    "BAN": "ban",
+}
+
+MAX_TIMEOUT_MINUTES = 28 * 24 * 60  # Discord erlaubt max. 28 Tage
+
+
+def role_from_ids(role_ids: set[int]) -> str:
+    """Sucht die höchste Dashboard-Rolle anhand der Discord-Rollen-IDs."""
+    for config_key, dashboard_role in ROLE_ORDER:
+        role_id = config.roles.get(config_key)
+        if role_id and int(role_id) in role_ids:
+            return dashboard_role
+    return "user"
+
+
+def check_hierarchy(guild: discord.Guild, moderator: discord.Member, target: discord.Member) -> str | None:
+    """Gleiche Schutzregeln wie hardlock_check bei den Slash-Commands.
+    Gibt eine Fehlermeldung zurück – oder None, wenn alles okay ist."""
+    if target.id == moderator.id:
+        return "Du kannst dich nicht selbst moderieren."
+    if target.bot:
+        return "Bots können nicht moderiert werden."
+    if get_user_perm_level(target) >= PermLevel.DEV:
+        return "Dieser User ist geschützt (Dev / Owner)."
+    if guild.me is None or target.top_role >= guild.me.top_role:
+        return "Meine Rolle ist zu niedrig für diese Aktion."
+    if moderator.id != guild.owner_id and target.top_role >= moderator.top_role:
+        return "User hat gleiche oder höhere Rolle als du."
+    return None
+
+
 def create_api(bot):
+    # Env erst HIER lesen (nicht beim Import), dann ist die .env von main.py sicher geladen.
+    client_id = os.getenv("DISCORD_CLIENT_ID")
+    client_secret = os.getenv("DISCORD_CLIENT_SECRET")
+    redirect_uri = os.getenv("DISCORD_REDIRECT_URI")
+    session_secret = os.getenv("CHAOSBOT_SESSION_SECRET")
+
+    # Ohne starkes Secret kann man Session-Cookies fälschen → lieber gar nicht starten.
+    if not session_secret or len(session_secret) < 32:
+        logger.critical("❌ CHAOSBOT_SESSION_SECRET fehlt oder ist kürzer als 32 Zeichen – Dashboard startet NICHT!")
+        raise RuntimeError("CHAOSBOT_SESSION_SECRET fehlt/zu kurz")
+
     app = FastAPI(title="ChaosBot API")
 
     app.add_middleware(
         SessionMiddleware,
-        secret_key=os.getenv("CHAOSBOT_SESSION_SECRET"),
-        https_only=True
+        secret_key=session_secret,
+        https_only=True,
+        same_site="lax",
+        max_age=12 * 60 * 60,  # 12 Stunden statt 14 Tage
     )
 
     app.mount("/web", StaticFiles(directory="web", html=True), name="web")
+
+    # ──────────────────────────────────────────────
+    # Helfer
+    # ──────────────────────────────────────────────
+
+    def get_guild() -> discord.Guild | None:
+        # Fester Server aus der Config statt "irgendein erster Server"
+        return bot.get_guild(config.guild_id)
+
+    async def on_bot(coro, timeout: float = 15):
+        """Führt eine Discord-Aktion im Event-Loop des BOTS aus und wartet darauf,
+        OHNE das Dashboard zu blockieren."""
+        future = asyncio.run_coroutine_threadsafe(coro, bot.loop)
+        return await asyncio.wait_for(asyncio.wrap_future(future), timeout)
+
+    def current_user(request: Request) -> dict:
+        """Eingeloggt? Noch auf dem Server? Und welche Rolle hat er JETZT gerade?"""
+        user = request.session.get("user")
+        if not user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        guild = get_guild()
+        member = guild.get_member(int(user["id"])) if guild else None
+        if member is None:
+            request.session.clear()
+            raise HTTPException(status_code=401, detail="Nicht (mehr) auf dem Server")
+
+        # Rolle bei JEDER Anfrage live prüfen → wer degradiert wird, verliert sofort den Zugriff
+        user["role"] = role_from_ids({r.id for r in member.roles})
+        request.session["user"] = user
+        return user
+
+    def need(minimum_role: str):
+        def checker(request: Request) -> dict:
+            user = current_user(request)
+            if not role_at_least(user["role"], minimum_role):
+                raise HTTPException(status_code=403, detail="Insufficient permissions")
+            return user
+        return checker
+
+    # ──────────────────────────────────────────────
+    # Öffentlich
+    # ──────────────────────────────────────────────
+
+    @app.api_route("/health", methods=["GET", "HEAD"])
+    async def health():
+        return {"status": "ok"}
 
     @app.get("/")
     async def root():
         return RedirectResponse(url="/login")
 
     @app.get("/login")
-    async def login():
-        url = (
-            f"https://discord.com/oauth2/authorize"
-            f"?client_id={DISCORD_CLIENT_ID}"
-            f"&redirect_uri={DISCORD_REDIRECT_URI}"
-            f"&response_type=code"
-            f"&scope=identify+guilds.members.read"
-        )
-        return RedirectResponse(url=url)
+    async def login(request: Request):
+        # Zufälliger "state" schützt davor, dass dir jemand seinen Login unterschiebt
+        state = secrets.token_urlsafe(24)
+        request.session["oauth_state"] = state
+        params = urlencode({
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "identify guilds.members.read",
+            "state": state,
+        })
+        return RedirectResponse(url=f"https://discord.com/oauth2/authorize?{params}")
 
     @app.get("/auth/callback")
-    async def auth_callback(code: str, request: Request):
-        async with httpx.AsyncClient() as client:
+    async def auth_callback(request: Request, code: str | None = None, state: str | None = None):
+        expected_state = request.session.pop("oauth_state", None)
+        if not code or not state or not expected_state or not secrets.compare_digest(state, expected_state):
+            raise HTTPException(status_code=400, detail="Ungültiger Login-Versuch – bitte nochmal einloggen")
+
+        async with httpx.AsyncClient(timeout=10) as client:
             token_res = await client.post(
                 "https://discord.com/api/oauth2/token",
                 data={
-                    "client_id": DISCORD_CLIENT_ID,
-                    "client_secret": DISCORD_CLIENT_SECRET,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
                     "grant_type": "authorization_code",
                     "code": code,
-                    "redirect_uri": DISCORD_REDIRECT_URI,
+                    "redirect_uri": redirect_uri,
                 },
-                headers={"Content-Type": "application/x-www-form-urlencoded"}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
-            token_data = token_res.json()
-            access_token = token_data.get("access_token")
-
+            access_token = token_res.json().get("access_token")
             if not access_token:
                 raise HTTPException(status_code=400, detail="Login fehlgeschlagen")
 
-            user_res = await client.get(
-                "https://discord.com/api/users/@me",
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
-            user_data = user_res.json()
-
+            auth_header = {"Authorization": f"Bearer {access_token}"}
+            user_res = await client.get("https://discord.com/api/users/@me", headers=auth_header)
             member_res = await client.get(
-                f"https://discord.com/api/users/@me/guilds/{DISCORD_GUILD_ID}/member",
-                headers={"Authorization": f"Bearer {access_token}"}
+                f"https://discord.com/api/users/@me/guilds/{config.guild_id}/member",
+                headers=auth_header,
             )
-            member_data = member_res.json()
-            member_roles = member_data.get("roles", [])
 
-            role = "user"
-            for role_id, role_name in ROLE_MAP.items():
-                if role_id in member_roles:
-                    role = role_name
-                    break
+        if user_res.status_code != 200:
+            raise HTTPException(status_code=400, detail="Login fehlgeschlagen")
 
-            request.session["user"] = {
-                "id": user_data["id"],
-                "name": user_data["username"],
-                "avatar": user_data.get("avatar"),
-                "role": role
-            }
+        # Nicht auf dem Server → kein Zugang (vorher gab's hier einfach Rolle "user")
+        if member_res.status_code != 200:
+            logger.warning(f"Dashboard-Login abgelehnt (nicht auf dem Server): {user_res.json().get('id')}")
+            raise HTTPException(status_code=403, detail="Du bist nicht auf dem ChaosBot-Server")
 
+        user_data = user_res.json()
+        role_ids = {int(r) for r in member_res.json().get("roles", [])}
+        role = role_from_ids(role_ids)
+
+        request.session.clear()  # alte Session-Reste weg
+        request.session["user"] = {
+            "id": user_data["id"],
+            "name": user_data["username"],
+            "avatar": user_data.get("avatar"),
+            "role": role,
+        }
         return RedirectResponse(url=ROLE_REDIRECT.get(role, "/web/dashboard.html"))
 
     @app.post("/logout")
@@ -113,32 +219,40 @@ def create_api(bot):
         request.session.clear()
         return RedirectResponse(url="/login")
 
-    @app.get("/api/me")
-    async def me(request: Request, _ = Depends(require_auth)):
-        return request.session.get("user")
+    # ──────────────────────────────────────────────
+    # Eingeloggt (alle Servermitglieder)
+    # ──────────────────────────────────────────────
 
-    @app.get("/api/dashboard", dependencies=[Depends(require_auth)])
+    @app.get("/api/me")
+    async def me(user: dict = Depends(current_user)):
+        return user
+
+    @app.get("/api/dashboard", dependencies=[Depends(current_user)])
     async def dashboard():
+        guild = get_guild()
         return {
             "server": {
-                "name": bot.guilds[0].name if bot.guilds else "—",
-                "users": bot.guilds[0].member_count if bot.guilds else 0
+                "name": guild.name if guild else "—",
+                "users": guild.member_count if guild else 0,
             },
             "stats": {
                 "bot": {
                     "status": "ONLINE" if bot.is_ready() else "OFFLINE",
-                    "latency": round(bot.latency * 1000)
+                    "latency": round(bot.latency * 1000),
                 }
-            }
+            },
         }
 
-    @app.get("/api/stats", dependencies=[Depends(require_auth)])
+    # ──────────────────────────────────────────────
+    # Staff
+    # ──────────────────────────────────────────────
+
+    @app.get("/api/stats", dependencies=[Depends(need("mod"))])
     async def stats():
         try:
             from utils.warnings_db import count_warnings
-            import discord
 
-            guild = bot.guilds[0] if bot.guilds else None
+            guild = get_guild()
             if not guild:
                 return {"warns": 0, "activeUsers": 0}
 
@@ -151,195 +265,171 @@ def create_api(bot):
                 1 for member in guild.members
                 if not member.bot and member.status != discord.Status.offline
             )
-
             return {"warns": total_warns, "activeUsers": active_users}
 
         except Exception as e:
-            return {"warns": 0, "activeUsers": 0, "error": str(e)}
+            logger.error(f"/api/stats Fehler: {e}")
+            return {"warns": 0, "activeUsers": 0, "error": "Interner Fehler"}
 
-    @app.get("/api/users", dependencies=[Depends(require_role("mod"))])
+    @app.get("/api/users", dependencies=[Depends(need("mod"))])
     async def users():
+        guild = get_guild()
+        if not guild:
+            return {"users": [], "error": "Keine Guild gefunden"}
+
+        result = []
+        for member in guild.members:
+            if member.bot:
+                continue
+            result.append({
+                "id": str(member.id),
+                "name": member.display_name,
+                "status": str(member.status),
+                "role": member.top_role.name if member.top_role else "Member",
+                "badges": [],
+            })
+        return {"users": result}
+
+    def read_last_log_lines(count: int) -> list[str]:
         try:
-            guild = bot.guilds[0] if bot.guilds else None
-            if not guild:
-                return {"users": [], "error": "Keine Guild gefunden"}
-
-            result = []
-            for member in guild.members:
-                if member.bot:
-                    continue
-                result.append({
-                    "id": str(member.id),
-                    "name": member.display_name,
-                    "status": str(member.status),
-                    "role": member.top_role.name if member.top_role else "Member",
-                    "badges": []
-                })
-            return {"users": result}
-
-        except Exception as e:
-            return {"users": [], "error": str(e)}
-
-    @app.get("/api/logs", dependencies=[Depends(require_auth)])
-    async def logs():
-        log_path = "/app/logs/bot.log"
-        try:
-            with open(log_path, "r") as f:
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
                 lines = f.readlines()
-            recent = list(reversed(lines[-50:]))
-            return {"logs": [line.strip() for line in recent if line.strip()]}
+            recent = list(reversed(lines[-count:]))
+            return [line.strip() for line in recent if line.strip()]
         except Exception as e:
-            return {"logs": [f"Log-Datei nicht gefunden: {str(e)}"]}
+            return [f"Log-Datei nicht gefunden: {e}"]
 
-    @app.post("/api/mod/action", dependencies=[Depends(require_role("mod"))])
-    async def mod_action(data: dict, request: Request):
-        action = data.get("action")
-        target_id = int(data.get("target_id", 0))
-        reason = data.get("reason", "Kein Grund angegeben (Dashboard)")
-        timeout_minutes = int(data.get("timeout_minutes", 0))
+    # Logs nur noch für Staff (Support+), vorher konnte JEDER eingeloggte User sie lesen
+    @app.get("/api/logs", dependencies=[Depends(need("support"))])
+    async def logs():
+        return {"logs": read_last_log_lines(50)}
 
-        guild = bot.guilds[0] if bot.guilds else None
+    @app.post("/api/mod/action")
+    async def mod_action(data: dict, user: dict = Depends(need("mod"))):
+        from datetime import timedelta
+        from discord.utils import utcnow
+        from utils.warnings_db import add_warning, count_warnings, save_ban, save_timeout
+        from utils.moderation_utils import handle_auto_actions
+
+        action = str(data.get("action", "")).upper()
+        reason = str(data.get("reason") or "Kein Grund angegeben (Dashboard)")[:400]
+
+        if action not in ACTION_PERMISSION:
+            return {"ok": False, "message": "Unbekannte Action"}
+
+        try:
+            target_id = int(data.get("target_id", 0))
+            timeout_minutes = int(data.get("timeout_minutes", 0) or 0)
+        except (TypeError, ValueError):
+            return {"ok": False, "message": "Ungültige Eingabe"}
+
+        guild = get_guild()
         if not guild:
             return {"ok": False, "message": "Guild nicht gefunden"}
 
-        mod_user = request.session.get("user")
-        mod_id = int(mod_user.get("id", 0))
-        moderator = guild.get_member(mod_id)
+        moderator = guild.get_member(int(user["id"]))
         target = guild.get_member(target_id)
-
+        if not moderator:
+            return {"ok": False, "message": "Du bist nicht (mehr) auf dem Server"}
         if not target:
             return {"ok": False, "message": "User nicht gefunden"}
-        
-        async def send_log(title, description, color):
+
+        # 1) Darf DIESER Mod DIESE Aktion? (gleiche Regeln wie /kick, /ban usw.)
+        if not has_permission(moderator, ACTION_PERMISSION[action]):
+            logger.warning(f"DASHBOARD BLOCK | {moderator} wollte {action} ohne Berechtigung")
+            return {"ok": False, "message": "❌ Dafür hast du keine Berechtigung."}
+
+        # 2) Darf er DIESEN User moderieren? (Rollen-Hierarchie, Schutz für Dev/Owner)
+        block_reason = check_hierarchy(guild, moderator, target)
+        if block_reason:
+            logger.warning(f"DASHBOARD BLOCK | {moderator} -> {target} | {action} | {block_reason}")
+            return {"ok": False, "message": f"❌ {block_reason}"}
+
+        log_channel_id = int(config.log_channels.get("moderation", 0))
+
+        async def send_log(title: str, description: str, color: discord.Color):
             try:
-                from utils.logger import log_to_channel
-                import discord
-                channel_id = int(config.log_channels.get("moderation", 0))
-                if channel_id:
-                    await log_to_channel(bot, channel_id, title, description, color)
+                await on_bot(log_to_channel(bot, log_channel_id, title, description, color))
             except Exception as e:
                 logger.warning(f"Log Fehler: {e}")
 
         try:
-            from utils.moderation_actions import safe_kick, safe_ban, safe_timeout
-            from utils.warnings_db import add_warning, count_warnings, save_ban, save_timeout
-            from utils.config import config
-            from datetime import timedelta
-            from discord.utils import utcnow
-            import discord
-
             if action == "WARN":
-                add_warning(
-                    guild_id=guild.id,
-                    user_id=target.id,
-                    moderator_id=mod_id,
-                    reason=reason
+                warning_id = add_warning(
+                    guild_id=guild.id, user_id=target.id,
+                    moderator_id=moderator.id, reason=reason,
                 )
                 total = count_warnings(guild_id=guild.id, user_id=target.id)
                 await send_log(
                     "⚠️ Verwarnung (Dashboard)",
-                    f"**Moderator:** {moderator}\n**User:** {target.mention}\n**Verwarnungen gesamt:** {total}\n**Grund:** {reason}",
-                    discord.Color.orange()
+                    f"**Moderator:** {moderator}\n**User:** {target.mention}\n"
+                    f"**Verwarnungen gesamt:** {total}\n**Grund:** {reason}",
+                    discord.Color.orange(),
                 )
+                # Gleiche Auto-Aktionen (Timeout/Kick/Ban) wie beim /warn-Command
+                await on_bot(handle_auto_actions(
+                    bot=bot, guild=guild, moderator=moderator, user=target,
+                    total_warnings=total, warning_id=warning_id,
+                ))
                 logger.info(f"WARN (Dashboard) | {moderator} -> {target} | {reason} | Total: {total}")
                 return {"ok": True, "message": f"✅ {target.name} verwarnt ({total} Verwarnungen gesamt)"}
 
-            elif action == "TIMEOUT":
-                if timeout_minutes <= 0:
-                    return {"ok": False, "message": "Timeout braucht Minuten > 0"}
-                duration = timeout_minutes * 60
-                until = utcnow() + timedelta(seconds=duration)
-                loop = bot.loop
-                future = asyncio.run_coroutine_threadsafe(
-                    target.timeout(until, reason=reason),
-                    loop
-                )
-                try:
-                    future.result(timeout=10)
-                except Exception as e: 
-                    return {"ok": False, "message": f"Timeout Fehler: {str(e)}"}
-                    
+            if action == "TIMEOUT":
+                if not 0 < timeout_minutes <= MAX_TIMEOUT_MINUTES:
+                    return {"ok": False, "message": "Timeout: 1 Minute bis 28 Tage"}
+                until = utcnow() + timedelta(minutes=timeout_minutes)
+                await on_bot(target.timeout(until, reason=reason))
                 save_timeout(guild.id, target.id, until, reason)
                 await send_log(
-                    "⚠️ Timeout (Dashboard)",
-                    f"**Moderator:** {moderator}\n**User:** {target.mention}\n**Dauert:** {timeout_minutes}min \n**Grund:** {reason}",
-                    discord.Color.orange()
+                    "⏱️ Timeout (Dashboard)",
+                    f"**Moderator:** {moderator}\n**User:** {target.mention}\n"
+                    f"**Dauer:** {timeout_minutes}min\n**Grund:** {reason}",
+                    discord.Color.gold(),
                 )
                 logger.info(f"TIMEOUT (Dashboard) | {moderator} -> {target} | {timeout_minutes}min | {reason}")
                 return {"ok": True, "message": f"✅ {target.name} für {timeout_minutes} Minuten in Timeout"}
 
-            elif action == "KICK":
-                loop =  bot.loop
-                future = asyncio.run_coroutine_threadsafe(
-                    target.kick(reason=reason),
-                    loop
-                )
-                try:
-                    future.result(timeout=10)
-                except Exception as e:
-                    return {"ok": False, "message": f"Kick Fehler: {str(e)}"}    
+            if action == "KICK":
+                await on_bot(target.kick(reason=reason))
                 await send_log(
-                    "⚠️ KICK (Dashboard)",
-                    f"**Moderator:** {moderator}\n**User:** {target.name}(ID: {target.id})\n**Grund:** {reason}",
-                    discord.Color.orange()
+                    "👢 Kick (Dashboard)",
+                    f"**Moderator:** {moderator}\n**User:** {target.name} (ID: {target.id})\n**Grund:** {reason}",
+                    discord.Color.orange(),
                 )
                 logger.info(f"KICK (Dashboard) | {moderator} -> {target} | {reason}")
                 return {"ok": True, "message": f"✅ {target.name} gekickt"}
 
-            elif action == "BAN":
-                loop = bot.loop
-                future= asyncio.run_coroutine_threadsafe(
-                    guild.ban(target, reason=reason),
-                    loop
-                )
-                try:
-                    future.result(timeout=10)
-                except Exception as e:
-                    return {"ok": False, "message": f"Bann Fehler: {str(e)}"}    
+            if action == "BAN":
+                await on_bot(guild.ban(target, reason=reason))
                 save_ban(guild.id, target.id, reason)
                 await send_log(
-                    "⚠️ BAN (Dashboard)",
+                    "🔨 Ban (Dashboard)",
                     f"**Moderator:** {moderator}\n**User:** {target.name} (ID: {target.id})\n**Grund:** {reason}",
-                    discord.Color.orange()
+                    discord.Color.dark_red(),
                 )
                 logger.info(f"BAN (Dashboard) | {moderator} -> {target} | {reason}")
                 return {"ok": True, "message": f"✅ {target.name} gebannt"}
 
-            else:
-                return {"ok": False, "message": "Unbekannte Action"}
-
+        except discord.Forbidden:
+            return {"ok": False, "message": "❌ Discord hat die Aktion blockiert (Bot-Rechte prüfen)."}
+        except asyncio.TimeoutError:
+            return {"ok": False, "message": "❌ Discord hat nicht rechtzeitig geantwortet."}
         except Exception as e:
-            logger.error(f"Mod Action Fehler: {e}")
-            return {"ok": False, "message": str(e)}
+            logger.error(f"Mod Action Fehler ({action}): {e}")
+            return {"ok": False, "message": "❌ Interner Fehler – siehe Logs."}
 
-    @app.get("/api/dev/logs", dependencies=[Depends(require_role("dev"))])
+    # ──────────────────────────────────────────────
+    # Dev
+    # ──────────────────────────────────────────────
+
+    @app.get("/api/dev/logs", dependencies=[Depends(need("dev"))])
     async def dev_logs():
-        log_path = "/app/logs/bot.log"
-        try:
-            with open(log_path, "r") as f:
-                lines = f.readlines()
-            recent = list(reversed(lines[-100:]))
-            return {"logs": [line.strip() for line in recent if line.strip()]}
-        except Exception as e:
-            return {"logs": [f"Log-Datei nicht gefunden: {str(e)}"]}
+        return {"logs": read_last_log_lines(100)}
 
-    @app.post("/api/dev/bot", dependencies=[Depends(require_role("dev"))])
+    @app.post("/api/dev/bot", dependencies=[Depends(need("dev"))])
     async def dev_bot_control(data: dict):
-        action = data.get("action")
-        import subprocess
-        try:
-            if action == "restart":
-                subprocess.Popen(["docker", "compose", "restart", "discordbot-dev"], cwd="/app")
-                return {"ok": True, "message": "Dev Bot wird neugestartet..."}
-            elif action == "stop":
-                subprocess.Popen(["docker", "compose", "stop", "discordbot-dev"], cwd="/app")
-                return {"ok": True, "message": "Dev Bot wird gestoppt..."}
-            elif action == "start":
-                subprocess.Popen(["docker", "compose", "start", "discordbot-dev"], cwd="/app")
-                return {"ok": True, "message": "Dev Bot wird gestartet..."}
-            else:
-                return {"ok": False, "message": "Unbekannte Action"}
-        except Exception as e:
-            return {"ok": False, "message": str(e)}
+        # Hinweis: Im Container gibt es kein Docker → das hier kann (absichtlich) nicht funktionieren.
+        # NICHT mit einem docker.sock-Mount "reparieren" – das wäre Root-Zugriff auf den Server per Webseite.
+        return {"ok": False, "message": "Bot-Steuerung übers Dashboard ist deaktiviert (bitte per SSH)."}
 
     return app

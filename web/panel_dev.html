@@ -356,6 +356,14 @@ async function loadDashboard() {
   } catch (e) { console.error(e); }
 }
 
+function escapeHtml(s) {
+  // Macht aus < > & " ' harmlosen Text, damit Nicknames kein HTML/JS einschleusen können
+  return String(s ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
 async function loadUsers() {
   try {
     const res = await fetch(API_BASE + "/api/users", { credentials: "include" });
@@ -372,8 +380,8 @@ async function loadUsers() {
             <div class="flex items-center gap-3">
               <span class="w-2.5 h-2.5 rounded-full ${u.status === 'online' ? 'bg-green-400' : 'bg-gray-600'}"></span>
               <div>
-                <div class="text-white">${u.name}</div>
-                <div class="text-xs text-gray-500">${u.role}</div>
+                <div class="text-white">${escapeHtml(u.name)}</div>
+                <div class="text-xs text-gray-500">${escapeHtml(u.role)}</div>
               </div>
             </div>
           </div>

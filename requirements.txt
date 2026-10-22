@@ -7,4 +7,4 @@ uvicorn[standard]
 python-multipart
 itsdangerous
 httpx
-
+tzdata

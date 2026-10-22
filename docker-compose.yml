@@ -11,8 +11,8 @@ services:
       - .:/app
       - ./logs/dev:/app/logs     # separate Logs für Dev (optional, aber nice)
     ports:
-      - "8001:8000"              # anderer Port, damit Prod 8000 frei hat
-    restart: no                  # oder 'no' zum Testen
+      - "127.0.0.1:8001:8000"              # anderer Port, damit Prod 8000 frei hat
+    restart: unless-stopped                  # oder 'no' zum Testen
     command: python main.py      # explizit, falls du mal was anderes brauchst
     dns: 
       - 1.1.1.1             # Cloudflare DNS für schnellere Namensauflösung (optional)
@@ -30,7 +30,7 @@ services:
       - .:/app
       - ./logs/prod:/app/logs    # separate Logs für Prod
     ports:
-      - "8000:8000"              # Standard-Port für Prod-API
+      - "127.0.0.1:8000:8000"              # Standard-Port für Prod-API
     restart: unless-stopped      # wichtig – Prod soll immer laufen
     command: python main.py
     dns:

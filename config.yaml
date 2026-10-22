@@ -135,8 +135,7 @@ tickets:
     max_open_per_user: 6
 
 twitch:
-  client_id: "8nuj95l45htu2uack2usqzuki9j9oc"
-  client_secret: "6xjs549sy1u43rfqdlf75luo28ri3c"
+  # client_id / client_secret stehen jetzt in der .env (TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET)
   username: "captinchaot"
   announce_channel: 1089487400172003338
   announce_role: 1482313970537857195

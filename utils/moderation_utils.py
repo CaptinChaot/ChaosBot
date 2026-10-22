@@ -1,5 +1,5 @@
 import discord
-from datetime import timedelta
+from datetime import datetime, timedelta
 from discord.utils import utcnow
 
 from utils.permissions import get_user_perm_level, PermLevel
@@ -58,9 +58,12 @@ async def handle_auto_actions(*,
         return False
 
     last_action = get_last_auto_action(guild_id=guild.id, user_id=user.id)
-    cooldown = config.automod.get("action_cooldown", 60)
+    # Wert steht in config.yaml unter moderation → auto_action_cooldown
+    cooldown = config.moderation.get("auto_action_cooldown", 60)
     if not auto_action_allowed(last_action, cooldown):
-        logger.info(f"AUTO ACTION COOLDOWN | {user} | Letzte Aktion: {last_action['type']} vor {int((utcnow() - last_action['timestamp']).total_seconds())}s")
+        # DB speichert "at" ohne Zeitzone (utcnow) → deshalb auch hier datetime.utcnow()
+        seconds_ago = int((datetime.utcnow() - last_action["at"]).total_seconds())
+        logger.info(f"AUTO ACTION COOLDOWN | {user} | Letzte Aktion: {last_action['type']} vor {seconds_ago}s")
         return False
     
     last_type = last_action["type"] if last_action else None

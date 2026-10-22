@@ -373,7 +373,7 @@ async function loadUserInfo() {
 
 // Logout Button
 document.getElementById("btnLogout").addEventListener("click", async () => {
-  await fetch(API_BASE + "/api/logout", { method: "POST", credentials: "include" });
+  await fetch(API_BASE + "/logout", { method: "POST", credentials: "include" });
   window.location.href = "/login.html";
 });
 

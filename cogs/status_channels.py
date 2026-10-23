@@ -3,7 +3,7 @@ from discord.ext import tasks, commands
 from utils.config import config
 from utils.logger import logger
 import aiohttp
-
+import asyncio
 
 class StatusChannels(commands.Cog):
     def __init__(self, bot):
@@ -27,11 +27,11 @@ class StatusChannels(commands.Cog):
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    "https://chaosbot.de/login",
+                    "https://chaosbot.de/health",
                     timeout=aiohttp.ClientTimeout(total=5),
-                    allow_redirects=True
+                    allow_redirects=False
                 ) as res:
-                    return res.status in [200, 307, 302]
+                    return res.status == 200
         except Exception:
             return False
 
@@ -72,6 +72,7 @@ class StatusChannels(commands.Cog):
     @update_status_channels.before_loop
     async def before_update(self):
         await self.bot.wait_until_ready()
+        await asyncio.sleep(15)
 
 
 async def setup(bot: commands.Bot):

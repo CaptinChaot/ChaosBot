@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+venv/
+.git/
+logs/
+data/
+*.save
+__pycache__/
+update.sh

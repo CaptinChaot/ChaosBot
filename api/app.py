@@ -87,7 +87,7 @@ def create_api(bot):
         logger.critical("❌ CHAOSBOT_SESSION_SECRET fehlt oder ist kürzer als 32 Zeichen – Dashboard startet NICHT!")
         raise RuntimeError("CHAOSBOT_SESSION_SECRET fehlt/zu kurz")
 
-    app = FastAPI(title="ChaosBot API")
+    app = FastAPI(title="ChaosBot API", docs_url=None, redoc_url=None, openapi_url=None)
 
     app.add_middleware(
         SessionMiddleware,

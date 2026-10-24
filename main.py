@@ -14,6 +14,7 @@ from discord import app_commands
 from utils.warnings_db import init_db
 from utils.birthday_db import init_birthday_db
 from utils.giveaway_db import init_giveaway_db
+from utils.member_log_db import init_member_log_db
 
 
 # ──────────────────────────────────────────────
@@ -135,6 +136,8 @@ intents.presences = True
 init_db()
 init_birthday_db()
 init_giveaway_db()
+init_member_log_db()
+
 class ChaosBot(commands.Bot):
     def __init__(self):
         super().__init__(

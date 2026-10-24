@@ -296,8 +296,9 @@ def create_api(bot):
                 lines = f.readlines()
             recent = list(reversed(lines[-count:]))
             return [line.strip() for line in recent if line.strip()]
-        except Exception as e:
-            return [f"Log-Datei nicht gefunden: {e}"]
+        except Exception:
+            logger.exception("Log-Datei konnte nicht gelesen werden")
+            return ["Fehler beim Lesen der Log-Datei"]
 
     # Logs nur noch für Staff (Support+), vorher konnte JEDER eingeloggte User sie lesen
     @app.get("/api/logs", dependencies=[Depends(need("support"))])

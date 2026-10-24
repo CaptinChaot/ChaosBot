@@ -11,25 +11,23 @@ class PermLevel(IntEnum):
     CO_OWNER = 35
     OWNER = 40
 
-ROLE_TO_LEVEL = {
-    role_id: level
-    for role_id, level in {
-    #MEMBER ROLES
-    config.roles.get("member_1"): PermLevel.MEMBER,
-    config.roles.get("member_2"): PermLevel.MEMBER,
-    config.roles.get("member_3"): PermLevel.MEMBER,
-    config.roles.get("member_4"): PermLevel.MEMBER,
+def get_role_to_level() -> dict:
+    mapping = {
+        # Member-Rollen
+        config.roles.get("member_1"): PermLevel.MEMBER,
+        config.roles.get("member_2"): PermLevel.MEMBER,
+        config.roles.get("member_3"): PermLevel.MEMBER,
+        config.roles.get("member_4"): PermLevel.MEMBER,
 
-    #Staff ROLES
-    config.roles.get("supporter"): PermLevel.SUPPORT,
-    config.roles.get("moderator"): PermLevel.MOD,
-    config.roles.get("admin"): PermLevel.ADMIN,
-    config.roles.get("dev"): PermLevel.DEV,
-    config.roles.get("owner"): PermLevel.OWNER,
-    config.roles.get("co_owner"): PermLevel.CO_OWNER,
-} .items()
-    if role_id is not None
-}
+        # Staff-Rollen
+        config.roles.get("supporter"): PermLevel.SUPPORT,
+        config.roles.get("moderator"): PermLevel.MOD,
+        config.roles.get("admin"): PermLevel.ADMIN,
+        config.roles.get("dev"): PermLevel.DEV,
+        config.roles.get("owner"): PermLevel.OWNER,
+        config.roles.get("co_owner"): PermLevel.CO_OWNER,
+    }
+    return {role_id: level for role_id, level in mapping.items() if role_id is not None}
 
 
 def get_user_perm_level(member: discord.Member) -> PermLevel:
@@ -42,9 +40,9 @@ def get_user_perm_level(member: discord.Member) -> PermLevel:
         return PermLevel.OWNER
     
     highest = PermLevel.MEMBER
-
+    role_to_level = get_role_to_level()
     for role in member.roles:
-        level = ROLE_TO_LEVEL.get(role.id)
+        level = role_to_level.get(role.id)
         if level and level > highest:
             highest = level
 

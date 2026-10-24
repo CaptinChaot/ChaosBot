@@ -167,3 +167,4 @@ data_retention:
   member_log_months: 12            # Monate, wie lange Member-Logs gespeichert werden
   warnings_months_since_last: 18   # Monate, wie lange Warnungen gespeichert werden, seit der letzten Warnung
   giveaways_days_after_end: 30     # Tage, wie lange Giveaways nach Ende gespeichert werden
+  tickets_days_after_close: 180    # archivierte Ticket-Channels

@@ -1,5 +1,5 @@
 import discord
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from discord import app_commands, Interaction
 from discord import user
 from discord.ext import commands
@@ -16,6 +16,7 @@ from utils.warnings_db import (
     delete_warning_by_id, get_last_auto_action, get_last_warning_id, save_ban, save_timeout, clear_ban, clear_timeout, get_user_status
 )
 from utils.moderation_actions import (safe_timeout, safe_untimeout, safe_kick, safe_ban, safe_unban, get_auto_action_preview)
+from utils.member_log_db import get_member_history
 
 mod_cfg = config.moderation
 
@@ -658,6 +659,54 @@ class Moderation(commands.Cog):
         )
 
         await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @app_commands.command(name ="joinhistory", description="Zeigt die Join-History eines Users an")
+    @app_commands.describe(
+        user="User – auch wenn er nicht mehr auf dem Server ist (ID einfügen)"
+    )
+    @require_perm("joinhistory")
+    async def joinhistory(
+        self,
+        interaction: Interaction,
+        user: discord.User
+    ):
+        await interaction.response.defer(ephemeral=True)
+
+        if not await self._check_moderation_feature(interaction):
+            return
+
+        history = get_member_history(interaction.guild.id, user.id)
+
+
+        if not history:
+            await interaction.followup.send(
+                f"ℹ️ Keine Join-History für {user} gefunden.",
+                ephemeral=True
+            )
+            return
+        joins = sum(1 for event, _, _ in history if event == "join")
+        leaves = sum(1 for event, _, _ in history if event == "leave")
+
+        lines = []
+        for event, username, created_at in history:
+            dt = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            icon = "✅" if event == "join" else "❌"
+            text = "Beigetreten" if event == "join" else "Verlassen"
+            lines.append(
+                f"{icon} **{text}** am {discord.utils.format_dt(dt, style='F')} als **{username}**")
+        embed = discord.Embed(
+            title=f"📜 Join-Verlauf für {user}",
+            description="\n".join(lines),
+            color=discord.Color.orange()if joins >= 3 else discord.Color.blue(),
+            timestamp=utcnow()
+            )
+        embed.set_thumbnail(url=user.display_avatar.url)
+        embed.add_field(name ="User-ID", value=f"{user.id}", inline=True)
+        embed.add_field(name ="Beigetreten/Verlassen", value=f"{joins}x / {leaves}x", inline=True)            
+        embed.set_footer(text=f"Letzte {len(history)} Einträge")
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
+            
 
     @app_commands.command(name="clear", description="Löscht Nachrichten in einem Kanal")
     @app_commands.describe(amount="Anzahl der zu löschenden Nachrichten (1 - 100)")

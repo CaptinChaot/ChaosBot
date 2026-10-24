@@ -65,6 +65,8 @@ permissions:
     min_level: 20
   userinfo:
     min_level: 5
+  joinhistory:
+    min_level: 5  
   devpanel:
     min_level: 30
   reload:

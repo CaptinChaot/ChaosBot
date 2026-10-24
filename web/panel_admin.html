@@ -104,7 +104,7 @@
         ⚙️ Settings
       </button>
       <!-- Nur für dev/owner sichtbar -->
-      <button id="devBotBtn" onclick="window.location.href='/web/panel_dev.html'" class="nav-btn hidden px-3 py-2 rounded-lg bg-purple-900/30 border border-purple-700/60 hover:shadow-glowSoft transition text-left text-purple-300">
+      <button id="devBotBtn" onclick="window.location.href='/dev'" class="nav-btn hidden px-3 py-2 rounded-lg bg-purple-900/30 border border-purple-700/60 hover:shadow-glowSoft transition text-left text-purple-300">
         🛠️ Dev Bot
       </button>
     </nav>
@@ -290,7 +290,7 @@ function showSection(name) {
 async function loadUserInfo() {
   try {
     const res = await fetch(API_BASE + "/api/me", { credentials: "include" });
-    if (res.status === 401) { window.location.href = "/web/login.html"; return null; }
+    if (res.status === 401) { window.location.href = "/login"; return null; }
     const user = await res.json();
 
     document.getElementById("userName").textContent = user.name;
@@ -309,7 +309,7 @@ async function loadUserInfo() {
 
     return user;
   } catch (e) {
-    window.location.href = "/web/login.html";
+    window.location.href = "/login";
     return null;
   }
 }
@@ -431,7 +431,7 @@ document.querySelectorAll("[data-action]").forEach(btn => {
 // Logout
 document.getElementById("btnLogout").addEventListener("click", async () => {
   await fetch(API_BASE + "/logout", { method: "POST", credentials: "include" });
-  window.location.href = "/web/login.html";
+  window.location.href = "/login";
 });
 
 document.getElementById("btnSync").addEventListener("click", () => {

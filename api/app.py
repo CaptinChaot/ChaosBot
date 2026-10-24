@@ -2,12 +2,11 @@ import os
 import asyncio
 import secrets
 from urllib.parse import urlencode
-
 import httpx
 import discord
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from utils.auth import role_at_least
@@ -30,13 +29,13 @@ ROLE_ORDER = [
 ]
 
 ROLE_REDIRECT = {
-    "owner":    "/web/panel_admin.html",
-    "co_owner": "/web/panel_admin.html",
-    "dev":      "/web/panel_dev.html",
-    "admin":    "/web/panel_admin.html",
-    "mod":      "/web/panel_mod.html",
-    "support":  "/web/panel_mod.html",
-    "user":     "/web/dashboard.html",
+    "owner":    "/admin",
+    "co_owner": "/admin",
+    "dev":      "/dev",
+    "admin":    "/admin",
+    "mod":      "/mod",
+    "support":  "/mod",
+    "user":     "/dashboard",
 }
 
 # Dashboard-Action → Key in config.yaml → permissions (gleiche Regeln wie die Slash-Commands)
@@ -97,7 +96,7 @@ def create_api(bot):
         max_age=12 * 60 * 60,  # 12 Stunden statt 14 Tage
     )
 
-    app.mount("/web", StaticFiles(directory="web", html=True), name="web")
+    app.mount("/web/assets", StaticFiles(directory="web/assets"), name="assets")
 
     # ──────────────────────────────────────────────
     # Helfer
@@ -150,7 +149,7 @@ def create_api(bot):
     async def root():
         return RedirectResponse(url="/login")
 
-    @app.get("/login")
+    @app.get("/auth/login")
     async def login(request: Request):
         # Zufälliger "state" schützt davor, dass dir jemand seinen Login unterschiebt
         state = secrets.token_urlsafe(24)
@@ -163,6 +162,32 @@ def create_api(bot):
             "state": state,
         })
         return RedirectResponse(url=f"https://discord.com/oauth2/authorize?{params}")
+
+    @app.get("/login")
+    async def login_page():
+        return FileResponse("web/login.html")
+
+    def panel(request: Request, name: str):
+        # Nicht eingeloggt → gar nicht erst die Seite ausliefern
+        if not request.session.get("user"):
+            return RedirectResponse(url="/login")
+        return FileResponse(f"web/{name}.html")
+
+    @app.get("/dashboard")
+    async def dashboard_page(request: Request):
+        return panel(request, "dashboard")
+
+    @app.get("/admin")
+    async def admin_page(request: Request):
+        return panel(request, "panel_admin")
+
+    @app.get("/mod")
+    async def mod_page(request: Request):
+        return panel(request, "panel_mod")
+
+    @app.get("/dev")
+    async def dev_page(request: Request):
+        return panel(request, "panel_dev")
 
     @app.get("/auth/callback")
     async def auth_callback(request: Request, code: str | None = None, state: str | None = None):
@@ -212,12 +237,12 @@ def create_api(bot):
             "avatar": user_data.get("avatar"),
             "role": role,
         }
-        return RedirectResponse(url=ROLE_REDIRECT.get(role, "/web/dashboard.html"))
+        return RedirectResponse(url=ROLE_REDIRECT.get(role, "/dashboard"))
 
     @app.post("/logout")
     async def logout(request: Request):
         request.session.clear()
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=303)
 
     # ──────────────────────────────────────────────
     # Eingeloggt (alle Servermitglieder)

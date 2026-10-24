@@ -10,6 +10,7 @@ services:
     volumes:
       - .:/app
       - ./logs/dev:/app/logs     # separate Logs für Dev (optional, aber nice)
+      - ./data/dev:/app/data
     ports:
       - "127.0.0.1:8001:8000"              # anderer Port, damit Prod 8000 frei hat
     restart: unless-stopped                  # oder 'no' zum Testen
@@ -29,6 +30,7 @@ services:
     volumes:
       - .:/app
       - ./logs/prod:/app/logs    # separate Logs für Prod
+      - ./data/prod:/app/data    # separate Daten für Prod
     ports:
       - "127.0.0.1:8000:8000"              # Standard-Port für Prod-API
     restart: unless-stopped      # wichtig – Prod soll immer laufen

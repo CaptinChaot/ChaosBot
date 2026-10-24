@@ -30,7 +30,7 @@ class TwitchLive(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "https://id.twitch.tv/oauth2/token",
-                params={
+                data={
                     "client_id": self.client_id,
                     "client_secret": self.client_secret,
                     "grant_type": "client_credentials"

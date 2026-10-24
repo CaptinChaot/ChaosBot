@@ -277,3 +277,18 @@ def get_user_status(guild_id: int, user_id: int):
         "active_ban": bool(active_ban),
         "reason": reason,
     }
+
+def cleanup_old_warnings(months: int) -> int:
+    with get_connection() as conn:
+        cur = conn.execute(
+            """
+            DELETE FROM warnings
+            WHERE (guild_id, user_id) IN (
+                SELECT guild_id, user_id FROM warnings
+                GROUP BY guild_id, user_id
+                HAVING datetime(MAX(created_at)) < datetime('now', ?)
+            )
+            """,
+            (f'-{months} months',)
+        )
+        return cur.rowcount  # Return the number of deleted rows

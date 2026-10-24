@@ -91,5 +91,11 @@ class Config:
     def giveaway(self) -> dict:
         giveaway = self._data.get("giveaway", {})
         return giveaway if isinstance(giveaway, dict) else {}
+    
+    @property
+    def data_retention(self) -> dict:
+        retention = self._data.get("data_retention", {})
+        return retention if isinstance(retention, dict) else {}
+
 # Singleton
 config = Config()

@@ -115,3 +115,27 @@ def get_active_giveaways(guild_id: int) -> list[dict]:
 def end_giveaway(giveaway_id: int):
     with get_connection() as conn:
         conn.execute("UPDATE giveaways SET ended = 1 WHERE id = ?", (giveaway_id,))
+
+def cleanup_old_giveaways(days: int) -> int:
+    modifier = f'-{days} days'
+    with get_connection() as conn:
+        conn.execute(
+            """
+            DELETE FROM giveaway_entries
+            WHERE giveaway_id IN (
+                SELECT id FROM giveaways
+                WHERE ended = 1
+                AND datetime(COALESCE(ends_at, created_at)) < datetime('now', ?)
+            )
+            """,
+            (modifier,)
+        )
+        cur = conn.execute(
+            """
+            DELETE FROM giveaways
+            WHERE ended = 1
+            AND datetime(COALESCE(ends_at, created_at)) < datetime('now', ?)
+            """,
+            (modifier,)
+        )
+        return cur.rowcount 

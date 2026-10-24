@@ -95,6 +95,7 @@ if bot_env == "dev":
     config._data["features"]["birthday"]              = True
     config._data["features"]["status_channels"]       = True
     config._data["features"]["giveaway"]              = True
+    config._data["features"]["data_cleanup"]           = True
 
     #automod
     config._data.setdefault("automod", {})
@@ -162,7 +163,8 @@ class ChaosBot(commands.Bot):
             "auto_handler":     config.features.get("automod", False), # ← AutoMod nur laden, wenn aktiviert
             "birthday":         config.features.get("birthday", False), # ← Birthday nur laden, wenn aktiviert
             "status_channels":  config.features.get("status_channels", False), # ← Status Channels nur laden, wenn aktiviert
-            "giveaway":         config.features.get("giveaway", False) # ← Giveaway nur laden, wenn aktiviert
+            "giveaway":         config.features.get("giveaway", False), # ← Giveaway nur laden, wenn aktiviert
+            "data_cleanup":     config.features.get("data_cleanup", False), # ← Data Cleanup alter Daten
 
         }
 

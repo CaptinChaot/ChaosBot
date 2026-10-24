@@ -48,4 +48,14 @@ def get_member_history(guild_id: int, user_id: int, limit: int = 20) -> list:
             (guild_id, user_id, limit)
         )
         return cur.fetchall()
-    
+
+def cleanup_member_log(months:int) -> int:
+    with get_connection() as conn:
+        cur = conn.execute(
+            """
+            DELETE FROM member_log
+            WHERE datetime(created_at) < datetime('now', ?)
+            """,
+            (f'-{months} months',)
+        )    
+        return cur.rowcount  # Return the number of deleted rows

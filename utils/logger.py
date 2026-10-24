@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 import discord
+from logging.handlers import TimedRotatingFileHandler
 
 # --- file path ---
 LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
@@ -14,7 +15,7 @@ logger.setLevel(logging.INFO)
 if not logger.handlers:
     fmt = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
 
-    fh = logging.FileHandler(LOG_FILE, encoding="utf-8")
+    fh = TimedRotatingFileHandler(LOG_FILE, when="midnight", interval=1, backupCount=14, encoding="utf-8")
     fh.setLevel(logging.INFO)
     fh.setFormatter(fmt)
 

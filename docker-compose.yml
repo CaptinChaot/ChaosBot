@@ -14,6 +14,11 @@ services:
     ports:
       - "127.0.0.1:8001:8000"              # anderer Port, damit Prod 8000 frei hat
     restart: unless-stopped                  # oder 'no' zum Testen
+    logging: 
+      driver: json-file
+      options:
+        max-size: "10m"          # max. 10 MB pro Log-Datei
+        max-file: "3"             # max. 3 Log-Dateien (rotierend)
     command: python main.py      # explizit, falls du mal was anderes brauchst
     dns: 
       - 1.1.1.1             # Cloudflare DNS für schnellere Namensauflösung (optional)
@@ -34,6 +39,11 @@ services:
     ports:
       - "127.0.0.1:8000:8000"              # Standard-Port für Prod-API
     restart: unless-stopped      # wichtig – Prod soll immer laufen
+    logging: 
+      driver: json-file
+      options:
+        max-size: "10m"          # max. 10 MB pro Log-Datei
+        max-file: "3"             # max. 3 Log-Dateien (rotierend)
     command: python main.py
     dns:
       - 1.1.1.1            # Cloudflare DNS für schnellere Namensauflösung (optional)

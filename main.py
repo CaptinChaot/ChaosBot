@@ -97,6 +97,11 @@ if bot_env == "dev":
     config._data["features"]["giveaway"]              = True
     config._data["features"]["data_cleanup"]           = True
 
+
+    # TEST – WIEDER ENTFERNEN! Dev löscht archivierte Tickets sofort    
+    config._data.setdefault("data_retention", {})
+    config._data["data_retention"]["tickets_days_after_close"] = 0
+
     #automod
     config._data.setdefault("automod", {})
     config._data["automod"]["enabled"] = True

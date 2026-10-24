@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <title>ChaosBot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/web/assets/tailwind.css">
+
+    <style>
+    .hud-bg {
+      background:
+        radial-gradient(80% 60% at 20% 10%, rgba(255,26,26,0.16), transparent 55%),
+        radial-gradient(70% 60% at 80% 90%, rgba(255,26,26,0.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,26,26,0.06), transparent 22%, rgba(255,26,26,0.03));
+    }
+    .hud-grid::before {
+      content:"";
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 46px 46px;
+      opacity: .14;
+      pointer-events:none;
+      mask-image: radial-gradient(circle at 50% 20%, black 0%, black 40%, transparent 72%);
+    }
+    .hud-scanlines::after {
+      content:"";
+      position:absolute; inset:0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.05),
+        rgba(255,255,255,0.05) 1px,
+        transparent 1px,
+        transparent 6px
+      );
+      opacity: .08;
+      pointer-events:none;
+    }
+    .corner-brackets { position: relative; }
+    .corner-brackets::before,
+    .corner-brackets::after {
+      content:"";
+      position:absolute;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,26,26,0.55);
+      filter: drop-shadow(0 0 10px rgba(255,26,26,0.35));
+      pointer-events:none;
+    }
+    .corner-brackets::before { top:10px; left:10px; border-right:0; border-bottom:0; }
+    .corner-brackets::after  { bottom:10px; right:10px; border-left:0; border-top:0; }
+
+    @keyframes hudPulse { 0%,100%{ opacity:.55 } 50%{ opacity:.95 } }
+    .hud-pulse { animation: hudPulse 3.2s ease-in-out infinite; }
+  </style>
+</head>
+
+<body class="bg-black text-gray-200 font-mono min-h-screen relative">
+
+    <!-- HUD Background -->
+    <div class="fixed inset-0 hud-bg hud-grid hud-scanlines pointer-events-none"></div>
+
+    <main class="relative z-10">
+    
+        <!-- Hero -->
+        <section class="max-w-5xl mx-auto px-6 pt-24 pb-16 flex flex-col items-center text-center gap-6">
+            <img src="/web/assets/CHAOSBOT_LOGO.png" alt ="ChaosBot Logo" 
+            class="w-24 h-24 rounded-2xl border border-gray-800 shadow-glow"/>
+
+        <h1 class="text-4xl md:text-5xl font-bold text-white tracking-wide">ChaosBot</h1>
+        
+        <p class="text-gray-400 max-w-xl">
+            Der Discord-Bot für CaptinChaot's Community: Moderation, Giveaways, Tickets und vieles mehr.
+        </p>
+
+        <a href="/login" class="mt-2 px-6 py-3 rounded-xl bg-chaosRed text-white font-semibold transition hover:shadow-glow">
+            Zum Dashboard
+        </a>
+
+        <div class="flex items-center gap-2 text-xs text-gray-500">
+            <span class="w-2 h-2 rounded-full bg-chaosRed hud-pulse"></span>
+            <span>CC HUD mode</span>
+        </div>
+        </section>
+
+    </main>
+
+</body>
+</html>

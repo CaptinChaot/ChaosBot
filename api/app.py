@@ -147,7 +147,7 @@ def create_api(bot):
 
     @app.get("/")
     async def root():
-        return RedirectResponse(url="/login")
+        return FileResponse("web/index.html")
 
     @app.get("/auth/login")
     async def login(request: Request):

@@ -15,7 +15,8 @@ from utils.warnings_db import init_db
 from utils.birthday_db import init_birthday_db
 from utils.giveaway_db import init_giveaway_db
 from utils.member_log_db import init_member_log_db
-
+from utils.guild_settings_db import init_guild_settings_db
+from utils.guild_config import seed_from_config 
 
 # ──────────────────────────────────────────────
 # 1. Umgebung erkennen & .env laden
@@ -138,6 +139,9 @@ init_db()
 init_birthday_db()
 init_giveaway_db()
 init_member_log_db()
+init_guild_settings_db()
+if seed_from_config(config.guild_id):
+    logger.info(f"✅ Guild Settings für {config.guild_id} aus config.yaml übernommen")
 
 class ChaosBot(commands.Bot):
     def __init__(self):

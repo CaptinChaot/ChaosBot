@@ -6,8 +6,7 @@ from utils.config import config
 from utils.logger import logger, log_to_channel
 from utils.warnings_db import add_warning, count_warnings
 from utils.moderation_utils import handle_auto_actions
-from utils.permissions import get_user_perm_level
-from utils.perm_level import PermLevel
+from utils.permissions import get_user_perm_level, PermLevel
 
 
 class AutoHandler(commands.Cog):

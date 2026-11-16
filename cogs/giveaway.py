@@ -5,8 +5,7 @@ from discord.ext import commands, tasks
 from discord import app_commands
 from utils.config import config
 from utils.logger import logger
-from utils.permissions import get_user_perm_level
-from utils.perm_level import PermLevel
+from utils.permissions import get_user_perm_level, PermLevel
 from utils.giveaway_db import (
     create_giveaway, set_message_id, add_entry, remove_entry,
     is_entered, get_entry_count, get_entries, get_giveaway,
